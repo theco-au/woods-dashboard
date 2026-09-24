@@ -9,7 +9,6 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23131210%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-family=%27Arial%27 font-weight=%27700%27 font-size=%2716%27 fill=%27%23fff%27 text-anchor=%27middle%27%3EW%3C/text%3E%3C/svg%3E">
 <title>Woods Group Dashboard</title>
 <style>
-  body.locked{min-height:100vh;display:flex;flex-direction:column;background:#131210} body.locked .gate{flex:1}
   :root{
     --ink:#16150f; --body:#575349; --mid:#8a857a; --faint:#a8a297;
     --line:#e2ded4; --line2:#efece4; --paper:#f7f5f0; --card:#fff; --black:#131210;
@@ -52,6 +51,7 @@
   body.locked .entbar .ctl,body.locked header.top,body.locked main{display:none}
   .gate{display:none;min-height:70vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--black)}
   body.locked .gate{display:flex}
+  body.locked{min-height:100vh;display:flex;flex-direction:column;background:var(--black)} body.locked .gate{flex:1}
   .gcard{max-width:440px;width:100%;text-align:center;color:#ddd8cd}
   .gcard .brand{justify-content:center;margin-bottom:26px}
   .gcard h1{font-size:26px;color:#fff;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
@@ -285,12 +285,30 @@ const hasEst=()=>perMonths().includes(DATA.current.key);
 const M=()=>{const m=DATA.mult;return ENT==='R'?{be:m.R_BREAKEVEN,tg:m.R_TARGET}:{be:m.S_BREAKEVEN,tg:m.S_TARGET}};
 const goal=()=>M().tg>M().be+1e-9;
 const deptsOf=e=>DATA.depts.filter(d=>d.ent===e);
+const isSup=e=>!!e.agg||/coordinator|resourcer|support|research/i.test(e.role||'');
+const allMonths=()=>(DATA.hist||[]).concat(DATA.months);
+const monthLab=k=>{const m=allMonths().find(x=>x.key===k);return m?m.label:k;};
+/* commission accrued for a month: the sheet's quarterly commission spread by the person's billings in that quarter */
+function commAcc(e,k){
+  const m=allMonths().find(x=>x.key===k); if(!m||!e.qtr||!e.qtr[m.q]) return 0;
+  const qk=allMonths().filter(x=>x.q===m.q).map(x=>x.key), tb=qk.reduce((s,x)=>s+(e.bill[x]||0),0);
+  return tb?(e.qtr[m.q].comm||0)*(e.bill[k]||0)/tb:0;
+}
+function entOf(e){const d=dep(e.dept);return d?d.ent:'R';}
+/* rolling three closed months ending with the latest closed month */
+function roll3(e){
+  const ks=allMonths().map(m=>m.key).filter(k=>k<DATA.current.key).slice(-3);
+  const c=ks.reduce((s,k)=>s+((e.cost[k]||{}).c||0),0), b=ks.reduce((s,k)=>s+(e.bill[k]||0),0);
+  return {c,b,mult:c?b/c:0,ks};
+}
 const dep=n=>DATA.depts.find(d=>d.name===n);
 function agg(e){
-  const o={g:0,s:0,pt:0,wc:0,c:0,b:0,est:false,paid:0};
-  perMonths().forEach(k=>{const c=e.cost[k]; if(c){o.g+=c.g;o.s+=c.s;o.pt+=c.pt;o.wc+=c.wc;o.c+=c.c;o.paid+=c.paid||0;if(c.b==='E')o.est=true;}
-    o.b+=e.bill[k]||0;});
-  const mm=M(); o.bev=o.c*mm.be; o.tgt=o.c*mm.tg; o.gap=o.b-o.tgt; o.mult=o.c?o.b/o.c:0; return o;
+  const o={g:0,s:0,pt:0,wc:0,c:0,b:0,est:false,paid:0,cm:0,tp:0,raw:0,ca:0,oh:0};
+  const ov=(DATA.ovh||{})[entOf(e)]||{};
+  perMonths().forEach(k=>{const c=e.cost[k]; if(c){o.g+=c.g;o.s+=c.s;o.pt+=c.pt;o.wc+=c.wc;o.c+=c.c;o.paid+=c.paid||0;o.cm+=c.cm||0;o.tp+=c.tp||0;o.raw+=c.raw||0;
+      if(c.b==='E')o.est=true; if(c.c&&!e.agg) o.oh+=ov[k]||0;}
+    o.b+=e.bill[k]||0; o.ca+=commAcc(e,k);});
+  const mm=M(); o.bev=o.c*mm.be; o.tgt=o.c*mm.tg; o.gap=o.b-o.tgt; o.mult=o.c?o.b/o.c:0; o.ct=o.b-o.ca-o.c-o.oh; return o;
 }
 function members(dn){
   return DATA.emps.filter(e=>e.dept===dn).map(e=>Object.assign({},e,{a:agg(e)}))
@@ -299,16 +317,17 @@ function members(dn){
 function teamBill(dn){const t=DATA.team[dn]||{};return perMonths().reduce((s,k)=>s+(t[k]||0),0);}
 function deptAgg(dn){
   const mem=members(dn), mm=M();
-  const o={c:0,b:0,g:0,s:0,pt:0,wc:0,heads:0,billed:0,est:false};
-  mem.forEach(e=>{o.c+=e.a.c;o.b+=e.a.b;o.g+=e.a.g;o.s+=e.a.s;o.pt+=e.a.pt;o.wc+=e.a.wc;if(e.a.c>0)o.heads++;if(e.a.b>0)o.billed++;if(e.a.est)o.est=true;});
-  o.team=teamBill(dn); o.b+=o.team;
+  const o={c:0,b:0,g:0,s:0,pt:0,wc:0,heads:0,billed:0,est:false,cm:0,tp:0,ca:0,oh:0,ct:0,billers:0};
+  mem.forEach(e=>{o.c+=e.a.c;o.b+=e.a.b;o.g+=e.a.g;o.s+=e.a.s;o.pt+=e.a.pt;o.wc+=e.a.wc;o.cm+=e.a.cm;o.tp+=e.a.tp;o.ca+=e.a.ca;o.oh+=e.a.oh;o.ct+=e.a.ct;
+    if(e.a.c>0&&!e.agg)o.heads++;if(e.a.b>0)o.billed++;if(e.a.est)o.est=true;if(e.a.c>0&&!isSup(e))o.billers++;});
+  o.team=teamBill(dn); o.b+=o.team; o.ct+=o.team;
   o.bev=o.c*mm.be; o.tgt=o.c*mm.tg; o.gap=o.b-o.tgt; o.mult=o.c?o.b/o.c:0; o.mem=mem; return o;
 }
 function entAgg(){
   const fee=deptsOf(ENT).filter(d=>d.fee), non=deptsOf(ENT).filter(d=>!d.fee);
-  const o={c:0,b:0,tgt:0,bev:0,heads:0,billed:0,clears:0,nonC:0};
-  fee.forEach(d=>{const a=deptAgg(d.name);o.c+=a.c;o.b+=a.b;o.heads+=a.heads;o.billed+=a.billed;
-    a.mem.forEach(e=>{if(e.a.c>0&&e.a.gap>=0)o.clears++;});});
+  const o={c:0,b:0,tgt:0,bev:0,heads:0,billed:0,clears:0,nonC:0,billers:0,cm:0,ca:0};
+  fee.forEach(d=>{const a=deptAgg(d.name);o.c+=a.c;o.b+=a.b;o.heads+=a.heads;o.billed+=a.billed;o.billers+=a.billers;o.cm+=a.cm;o.ca+=a.ca;
+    a.mem.forEach(e=>{if(e.a.c>0&&!isSup(e)&&e.a.gap>=0)o.clears++;});});
   non.forEach(d=>{o.nonC+=deptAgg(d.name).c;});
   const mm=M(); o.bev=o.c*mm.be; o.tgt=o.c*mm.tg; o.gap=o.b-o.tgt; o.mult=o.c?o.b/o.c:0; return o;
 }
@@ -319,14 +338,24 @@ const TIPS=[];
 const TIP=h=>{TIPS.push(h);return ` data-tip="${TIPS.length-1}"`;};
 const r2=(a,b,c)=>`<tr class="${c||''}"><td>${a}</td><td>${b}</td></tr>`;
 function empTip(e){
-  const a=e.a, mm=M();
+  const a=e.a, mm=M(), ks=perMonths(), one=ks.length===1?ks[0]:null, x1=one&&e.cost[one];
   let t=`<div class="th">${esc(e.name)}</div><div class="ts">${esc(e.role||e.type||'')}${e.salesName?' · sheet "'+esc(e.salesName)+'"':''}${e.alloc<1?' · '+Math.round(e.alloc*100)+'% allocated':''}</div><table>`;
-  t+=r2('Gross wages and allowances',F2(a.g))+r2('Superannuation',F2(a.s))+r2('Payroll tax',F2(a.pt))+r2('WorkCover',F2(a.wc))+r2('Cost of employment',F2(a.c),'s');
-  if(a.est) t+=r2('Current month','estimated to day '+DATA.current.day+' of '+DATA.current.days);
+  const lim=DATA.viewer&&DATA.viewer.level==='summary';
+  if(lim&&!e.agg) return t+r2('Billings (GP)',F(a.b),'s')+r2('Pay','not shown at your access level')+'</table>';
+  if(e.agg) t+=r2('Department payroll','individual pay not shown');
+  t+=r2('Base pay, leave and allowances',F2(a.g))+r2('Superannuation',F2(a.s))+r2('Payroll tax',F2(a.pt))+r2('WorkCover',F2(a.wc))+r2('Cost of employment',F2(a.c),'s');
+  if(x1&&x1.b==='A'&&x1.n) t+=r2('FoundU pays in the month',x1.n+' weekly, normalised to '+(new Date(+one.slice(0,4),+one.slice(5,7),0).getDate()/7).toFixed(2)+' weeks');
+  if(a.est) t+=r2('Current month','estimated to day '+DATA.current.day+' of '+DATA.current.days+(e.rateSrc?' from '+esc(e.rateSrc):''));
   if(a.paid && a.est) t+=r2('FoundU paid so far this month',F2(a.paid));
+  if(a.cm) t+=r2('Commission and bonus paid, loaded (not in cost)',F2(a.cm));
+  if(a.tp) t+=r2('Termination payments, loaded (not in cost)',F2(a.tp));
   t+=r2('Billings (GP)',F(a.b),'g');
-  if(a.c){ t+=r2('Break-even ×'+mm.be.toFixed(2),F(a.bev),'g'); if(goal()) t+=r2('Target ×'+mm.tg.toFixed(2),F(a.tgt));
+  if(a.c&&!isSup(e)){ t+=r2('Break-even ×'+mm.be.toFixed(2),F(a.bev),'g'); if(goal()) t+=r2('Target ×'+mm.tg.toFixed(2),F(a.tgt));
     t+=r2(a.gap>=0?'Ahead by':'Short by',`<span class="${a.gap>=0?'up':'dn'}">${F(Math.abs(a.gap))}</span>`,'s')+r2('Billings per $1 of cost','×'+a.mult.toFixed(2)); }
+  else if(a.c) t+=r2('Desk support','cost carried by the department multiple','g');
+  if(a.c||a.b){ t+=r2('Less commission accrued (sheet)',F(-a.ca),'g')+r2('Less cost of employment',F(-a.c))+r2('Less share of overhead',F(-a.oh))
+    +r2('Contribution',`<span class="${a.ct>=0?'up':'dn'}">${F(a.ct)}</span>`,'s'); }
+  const r=roll3(e); if(r.c&&!e.agg) t+=r2('Last 3 closed months','×'+r.mult.toFixed(2)+' ('+F(r.b)+' on '+F(r.c)+')','g');
   return t+'</table>';
 }
 let tipEl=null;
@@ -358,7 +387,7 @@ function bars(rows,teamRow){
      <span><i class="g"></i>Billings above cost</span><span><i class="r"></i>Billings short of cost</span>
      ${two?`<span><i class="bb"></i>Break-even ${mm.be.toFixed(2)}×</span><span><i class="b"></i>Target ${mm.tg.toFixed(2)}×</span>`
           :`<span><i class="b"></i>Break-even ${mm.be.toFixed(2)}×</span>`}</div>
-   ${all.map(r=>{const a=r.a,c=a.c,b=a.b,cw=c/mx*100,bw=b/mx*100,bev=a.bev/mx*100,tg=a.tgt/mx*100;
+   ${all.map(r=>{const a=r.a,c=a.c,b=a.b,cw=c/mx*100,bw=b/mx*100,bev=a.bev/mx*100,tg=a.tgt/mx*100,sup=!r.team&&isSup(r)&&!(b>0&&!r.agg);
      const seg=b>=c?`<div class="seg cost" style="left:0;width:${cw}%"></div><div class="seg gain" style="left:${cw}%;width:${Math.max(bw-cw,0)}%"></div>`
                    :`<div class="seg cost" style="left:0;width:${bw}%"></div><div class="seg short" style="left:${bw}%;width:${Math.max(cw-bw,0)}%"></div>`;
      return `<div class="row"${r.team?'':TIP(empTip(r))}>
@@ -366,7 +395,8 @@ function bars(rows,teamRow){
        <div class="track"><div class="base"></div>${seg}
          ${c?`${two?`<div class="bevm" style="left:${Math.min(bev,99.5)}%"></div>`:''}<div class="bench" style="left:${Math.min(tg,99.4)}%"><b>${F(a.tgt)}</b></div>`:''}</div>
        <div class="amt">${F(b)}<small>cost ${F(c)}</small></div>
-       <div class="mx ${c?mvc(a.mult):'zero'}">${c?X(a.mult):'—'}<small>${!c?(r.team?'team line':'no payroll'):(a.gap>=0?'+'+F(a.gap):F(a.gap))}</small></div>
+       ${sup?`<div class="mx zero">${b?X(a.mult):'—'}<small>${r.agg?'dept payroll':'desk support'}</small></div>`
+       :`<div class="mx ${c?mvc(a.mult):'zero'}">${c?X(a.mult):'—'}<small>${!c?(r.team?'team line':DATA.viewer&&DATA.viewer.level==='summary'?'pay not shown':'no payroll'):(a.gap>=0?'+'+F(a.gap):F(a.gap))}</small></div>`}
      </div>`}).join('')}</div>`;
 }
 
@@ -380,17 +410,18 @@ function monthTable(){
     ${rows.map(({m,a})=>{const ref=goal()?a.tgt:a.bev, gp=a.b-ref;return `<tr><td>${m.label}</td><td>${F(a.b)}</td><td>${F(a.c)}</td><td class="mut">${F(a.bev)}</td>
       ${goal()?`<td>${F(a.tgt)}</td>`:''}<td class="${gp>=0?'pos':'neg'}">${gp>=0?'+'+F(gp):F(gp)}</td>
       <td class="${mvc(a.mult)}" style="font-weight:700">${X(a.mult)}</td>
-      <td class="tx mut">${m.key===DATA.current.key?'Estimate to day '+DATA.current.day:'FoundU actual'}</td></tr>`}).join('')}
+      <td class="tx mut">${m.key===DATA.current.key?'Estimate to day '+DATA.current.day:'FoundU, '+((DATA.pays||{})[m.key]||'?')+' pays normalised'}</td></tr>`}).join('')}
     <tr class="tot"><td>${DATA.fy} to date</td><td>${F(T.b)}</td><td>${F(T.c)}</td><td>${F(T.c*mm.be)}</td>${goal()?`<td>${F(T.c*mm.tg)}</td>`:''}
       <td class="${T.b-(goal()?T.c*mm.tg:T.c*mm.be)>=0?'pos':'neg'}">${F(T.b-(goal()?T.c*mm.tg:T.c*mm.be))}</td><td>${X(T.c?T.b/T.c:0)}</td><td></td></tr>
   </tbody></table></div>`;
 }
+function tempGP(dn){const ks=perMonths();return (DATA.excluded||[]).filter(x=>/Temp/.test(x.why)&&x.dept===dn&&ks.includes(x.month)).reduce((s,x)=>s+x.amt,0);}
 function scorecard(){
   const fee=deptsOf(ENT).filter(d=>d.fee), non=deptsOf(ENT).filter(d=>!d.fee), t=entAgg();
   const rows=fee.map(d=>({d,a:deptAgg(d.name)})).filter(x=>x.a.c||x.a.b).sort((x,y)=>y.a.gap-x.a.gap);
   return `<div class="tbl"><table><thead><tr><th>Department</th><th>Billings (GP)</th><th>Cost</th><th>Break-even</th>${goal()?'<th>Target</th>':''}
     <th>Gap</th><th>Multiple</th><th>Heads</th><th>Billed</th></tr></thead><tbody>
-    ${rows.map(({d,a})=>`<tr><td><b style="color:var(--ink)">${d.label}</b>${a.est?'<span class="est">est.</span>':''}</td><td>${F(a.b)}</td><td>${F(a.c)}</td>
+    ${rows.map(({d,a})=>`<tr><td><b style="color:var(--ink)">${d.label}</b>${a.est?'<span class="est">est.</span>':''}${tempGP(d.name)?`<br><span class="mut" style="font-size:12px">Temp GP not counted: ${F(tempGP(d.name))}</span>`:''}</td><td>${F(a.b)}</td><td>${F(a.c)}</td>
       <td class="mut">${F(a.bev)}</td>${goal()?`<td>${F(a.tgt)}</td>`:''}
       <td class="${(goal()?a.gap:a.b-a.bev)>=0?'pos':'neg'}">${F(goal()?a.gap:a.b-a.bev)}</td>
       <td class="${mvc(a.mult)}" style="font-weight:700">${X(a.mult)}</td><td>${a.heads}</td><td>${a.billed}${a.team?' + team':''}</td></tr>`).join('')}
@@ -440,14 +471,16 @@ function summary(){
       <div class="sub">Break-even ${mm.be.toFixed(2)}×${goal()?', target '+mm.tg.toFixed(2)+'×':''}.</div></div>
     ${t.billed===0&&t.b>0?`<div class="kpi"><div class="lab">How billings are recorded</div><div class="val" style="font-size:22px">As a team</div>
       <div class="sub">The sales sheet has one line for the whole team, so there is no per-person split.</div></div>`
-    :`<div class="kpi"><div class="lab">At or above ${goal()?'target':'break-even'}</div><div class="val">${t.clears} <span class="mut" style="font-size:18px">of ${t.heads}</span></div>
-      <div class="sub">${t.billed} billed at all.</div></div>`}
+    :`<div class="kpi"><div class="lab">At or above ${goal()?'target':'break-even'}</div><div class="val">${t.clears} <span class="mut" style="font-size:18px">of ${t.billers}</span></div>
+      <div class="sub">${t.billed} billed at all. Coordinators are counted as desk support, not individually.</div></div>`}
   </div>
   ${hasEst()?`<div class="flag"><div><div class="ft">${esc(DATA.months.find(m=>m.key===c.key).label)} is in progress</div>
     <div class="fd">Cost is estimated for ${c.day} of ${c.days} days from salaries. Billings are whatever the sales sheet holds today, so the month will look short of target until placements are entered.</div></div></div>`:''}
+  ${DATA.viewer&&DATA.viewer.level==='summary'?`<div class="flag"><div><div class="ft">Department view</div><div class="fd">Individual pay is not shown at your access level. Each department's payroll appears as one line.</div></div></div>`:''}
+  ${PER==='CUR'?fwdNote(fee):''}
   ${PER==='CUR'?trackSection(fee):''}
   <section class="blk"><div class="hd"><h2>Every fee earner, ${esc(perName())}</h2><div class="rt">Sorted by billings</div></div>
-    <p class="note">Each person's billings against their fully loaded cost. Everyone carries the same multiple: break-even is cost × ${mm.be.toFixed(2)}${goal()?' and target is cost × '+mm.tg.toFixed(2):''}, per the ${esc(DATA.mult.BASIS)}. Hover a row for the cost build.</p>
+    <p class="note">Each person's billings against their fully loaded cost. Everyone carries the same multiple: break-even is cost × ${mm.be.toFixed(2)}${goal()?' and target is cost × '+mm.tg.toFixed(2):''}, ${esc(DATA.mult.BASIS)}. Coordinators are desk support: their cost counts in the department, not as an individual target. Hover a row for the cost build.</p>
     ${teamRows.map(tr=>`<div style="margin-bottom:12px">${bars([],tr)}</div>`).join('')}${bars(rows)}
   </section>
   <section class="blk"><div class="hd"><h2>Department scorecard</h2><div class="rt">${esc(perName())}</div></div>${scorecard()}</section>
@@ -456,6 +489,12 @@ function summary(){
   <section class="blk"><div class="hd"><h2>Quarterly targets and commission</h2><div class="rt">Per the sales sheet</div></div>${quarterTable()}</section>`;
 }
 
+function fwdNote(fee){
+  const f=DATA.fwdBill||{}, ks=(DATA.fwd||[]).map(m=>m.key);
+  const tot=ks.map(k=>({k,v:fee.reduce((s,d)=>s+((f[d.name]||{})[k]||0),0)})).filter(x=>x.v);
+  if(!tot.length) return '';
+  return `<div class="flag ok"><div><div class="ft">Already on the sales sheet for coming months</div><div class="fd">${tot.map(x=>esc(monthLab(x.k))+' '+F(x.v)).join(' · ')}. Not counted in any figure until the month starts.</div></div></div>`;
+}
 /* ---------- on track for the month ---------- */
 function monthCost(e,k){const x=e.cost[k]; if(!x) return 0; return x.m!=null?x.m:(x.b==='E'&&DATA.current.fraction?x.c/DATA.current.fraction:x.c);}
 function trackSection(depts){
@@ -464,12 +503,15 @@ function trackSection(depts){
   const mName=mo.label.split(' ')[0];
   if(!fw) return `<section class="blk"><div class="hd"><h2>On track for ${esc(mo.label)}?</h2></div>
     <div class="flag"><div><div class="ft">No full week has passed yet</div><div class="fd">Weekly pace starts from 8 ${esc(mName)}, once 1 to 7 ${esc(mName)} is complete.</div></div></div></section>`;
-  const share=fw*7/c.days, remDays=c.days-fw*7, remW=remDays/7;
-  const st=(b,t,be,team)=>{ if(team) return '<span class="st na">Billed as a team</span>'; if(!t) return '<span class="st na">No cost</span>';
+  const bdM=c.bdMonth||c.days, bdF=c.bdFull!=null?c.bdFull:fw*7;
+  const share=bdF/bdM, remDays=c.days-fw*7, remW=remDays/7;
+  const st=(b,t,be,team,sup)=>{ if(team) return '<span class="st na">Billed as a team</span>'; if(sup) return '<span class="st na">Desk support</span>'; if(!t) return '<span class="st na">No cost</span>';
     if(b>=t*share) return '<span class="st ok">On track</span>';
     if(goal()&&b>=be*share) return '<span class="st mid">Above break-even pace</span>';
     return '<span class="st bad">Behind</span>'; };
-  const line=(lab,sub,t,b,be,cls,team)=>{const exp=t*share, gap=b-exp, still=Math.max(t-b,0);
+  const line=(lab,sub,t,b,be,cls,team,sup)=>{const exp=t*share, gap=b-exp, still=Math.max(t-b,0);
+    if(sup) return `<tr class="${cls||''}"><td>${lab}${sub?`<br><span class="mut" style="font-size:12px">${sub}</span>`:''}</td>
+      <td class="mut">${F(t)}</td><td class="mut">—</td><td>${b?F(b):'<span class="mut">nil</span>'}</td><td class="mut">—</td><td style="text-align:left">${st(b,t,be,team,true)}</td><td class="mut">—</td><td class="mut">—</td></tr>`;
     return `<tr class="${cls||''}"><td>${lab}${sub?`<br><span class="mut" style="font-size:12px">${sub}</span>`:''}</td>
       <td>${F(t)}</td><td class="mut">${F(exp)}</td><td>${team?'<span class="mut">team</span>':F(b)}</td>
       <td class="${team?'mut':gap>=0?'pos':'neg'}">${team?'—':(gap>=0?'+'+F(gap):F(gap))}</td>
@@ -483,16 +525,17 @@ function trackSection(depts){
     const team=(DATA.team[d.name]||{})[k]||0, asTeam=team>0&&rows.every(r=>!r.b);
     const D={t:0,b:team,be:0};
     rows.forEach(r=>{const t=r.mc*mult, be=r.mc*mm.be; D.t+=t; D.b+=r.b; D.be+=be;
-      body+=line(`<b style="color:var(--ink)">${esc(r.e.name)}</b>`, esc(r.e.role||''), t, r.b, be, '', asTeam);});
+      body+=line(`<b style="color:var(--ink)">${esc(r.e.name)}</b>`, esc(r.e.role||''), t, r.b, be, '', asTeam, isSup(r.e)&&!r.b);});
     if(team&&!asTeam) body+=`<tr class="sub"><td>Team line in the sales sheet</td><td></td><td></td><td>${F(team)}</td><td colspan="4"></td></tr>`;
     if(depts.length>1||team) body+=line(esc(d.label)+' total','',D.t,D.b,D.be,'sub',false);
     T.t+=D.t; T.b+=D.b; T.be+=D.be;
   });
   if(depts.length>1) body+=line(esc(DATA.ents[ENT].short)+' fee departments','',T.t,T.b,T.be,'tot',false);
   return `<section class="blk"><div class="hd"><h2>On track for ${esc(mo.label)}?</h2>
-    <div class="rt">${fw} of ${(c.days/7).toFixed(1)} weeks gone · 1 to ${fw*7} ${esc(mName)}</div></div>
+    <div class="rt">${fw} full week${fw>1?'s':''} gone · 1 to ${fw*7} ${esc(mName)} · ${bdF} of ${bdM} business days</div></div>
     <p class="note">Each person's monthly ${word} is their full-month cost × ${mult.toFixed(2)}. After ${fw} full week${fw>1?'s':''}
-      (${Math.round(share*100)}% of the month) they are on track if billings to date are at least ${Math.round(share*100)}% of that.
+      (${bdF} of ${bdM} business days, ${Math.round(share*100)}% of the month, public holidays excluded) they are on track if billings to date are at least ${Math.round(share*100)}% of that.
+      Coordinators show as desk support: their cost is in the department total, not an individual target.
       Billings include anything entered for the week in progress. The last column is what is still needed each week for the
       remaining ${remDays} days.${goal()?' Above break-even pace means covering cost, but not yet the profit target.':''}</p>
     <div class="tbl"><table><thead><tr><th>Name</th><th>Monthly ${word}</th><th>Expected by now</th><th>Billed</th><th>Ahead / behind</th>
@@ -545,42 +588,68 @@ function deptPage(dn){
   const rows=a.mem.slice().sort((x,y)=>y.a.b-x.a.b);
   const team=teamRowFor(d,a);
   const ref=goal()?a.tgt:a.bev;
+  const tg=tempGP(dn);
   const kp=d.fee?`<div class="kpis">
     <div class="kpi"><div class="lab">Billings (GP)</div><div class="val">${F(a.b)}</div><div class="sub">${a.billed} of ${a.heads} billed${a.team?', plus the team line':''}.</div></div>
     <div class="kpi"><div class="lab">Cost</div><div class="val">${F(a.c)}</div><div class="sub">${a.heads} on payroll${a.est?', current month estimated':''}.</div></div>
     <div class="kpi"><div class="lab">${goal()?'Target':'Break-even'}</div><div class="val">${F(ref)}</div>
       <div class="chip ${a.b>=ref?'up':'dn'}">${X(a.mult)} achieved</div><div class="sub">${goal()?'Break-even '+F(a.bev)+'.':'No profit goal set.'}</div></div>
     <div class="kpi"><div class="lab">Gap</div><div class="val ${a.b-ref>=0?'pos':'neg'}">${a.b-ref>=0?'+'+F(a.b-ref):F(a.b-ref)}</div>
-      <div class="sub">${a.b>=ref?'Ahead.':a.b>=a.bev?'Above break-even, short of target.':'Below break-even.'}</div></div></div>`
+      <div class="sub">${a.b>=ref?'Ahead.':a.b>=a.bev?'Above break-even, short of target.':'Below break-even.'}</div></div>
+    <div class="kpi"><div class="lab">Contribution</div><div class="val ${a.ct>=0?'pos':'neg'}">${F(a.ct)}</div>
+      <div class="sub">After commission accrued ${F(a.ca)}, cost and overhead share ${F(a.oh)}.${tg?' Temp GP not counted: '+F(tg)+'.':''}</div></div></div>`
    :`<div class="kpis"><div class="kpi"><div class="lab">Cost</div><div class="val">${F(a.c)}</div><div class="sub">${a.heads} people.</div></div>
     <div class="kpi"><div class="lab">Billing target</div><div class="val">None</div><div class="sub">Recovered through the ${mm.tg.toFixed(2)}× the fee departments carry. A separate target would count this cost twice.</div></div></div>`;
   return kp+`<section class="blk"><div class="hd"><h2>${esc(d.label)}</h2><div class="rt">${esc(perName())}</div></div>
     ${d.fee?bars(rows,team):''}</section>
     ${d.fee&&PER==='CUR'?trackSection([d]):''}
-    <section class="blk"><div class="hd"><h2>Cost build</h2><div class="rt">Hover a row for detail</div></div>
-    <div class="tbl"><table><thead><tr><th>Name</th><th>Gross + allowances</th><th>Super</th><th>Payroll tax</th><th>WorkCover</th><th>Cost</th><th>Loading</th>
-      ${d.fee?`<th>Billings</th><th>Break-even</th>${goal()?'<th>Target</th>':''}<th>Gap</th>`:''}</tr></thead><tbody>
-    ${rows.map(r=>{const x=r.a, gp=goal()?x.gap:x.b-x.bev;return `<tr${TIP(empTip(r))}><td><b style="color:var(--ink)">${esc(r.name)}</b>${x.est?'<span class="est">est.</span>':''}<br><span class="mut" style="font-size:12px">${esc(r.role||r.type||'')}</span></td>
-      <td>${F(x.g)}</td><td>${F(x.s)}</td><td>${F(x.pt)}</td><td>${F(x.wc)}</td><td style="font-weight:700">${F(x.c)}</td>
-      <td class="load">${x.g?'×'+(x.c/x.g).toFixed(2):'—'}</td>
-      ${d.fee?`<td>${x.b?F(x.b):'<span class="mut">nil</span>'}</td><td class="mut">${x.c?F(x.bev):'—'}</td>${goal()?`<td>${x.c?F(x.tgt):'—'}</td>`:''}
-      <td class="${!x.c?'mut':gp>=0?'pos':'neg'}">${!x.c?'—':(gp>=0?'+'+F(gp):F(gp))}</td>`:''}</tr>`}).join('')}
-    ${a.team?`<tr class="sub"><td>Team line in the sales sheet</td><td colspan="6"></td><td>${F(a.team)}</td><td colspan="${goal()?3:2}"></td></tr>`:''}
-    <tr class="tot"><td>${esc(d.label)}</td><td>${F(a.g)}</td><td>${F(a.s)}</td><td>${F(a.pt)}</td><td>${F(a.wc)}</td><td>${F(a.c)}</td><td class="load">${a.g?'×'+(a.c/a.g).toFixed(2):'—'}</td>
-      ${d.fee?`<td>${F(a.b)}</td><td class="mut">${F(a.bev)}</td>${goal()?`<td>${F(a.tgt)}</td>`:''}<td class="${a.b-ref>=0?'pos':'neg'}">${F(a.b-ref)}</td>`:''}</tr>
+    <section class="blk"><div class="hd"><h2>Cost build and contribution</h2><div class="rt">Hover a row for detail</div></div>
+    <p class="note">Cost is base pay, leave and package allowances plus super, payroll tax and WorkCover${PER!=='CUR'?', with closed months normalised from weekly pays to a calendar month':''}.
+      Commission, bonus and termination payments are shown separately and are not in cost.${d.fee?' Contribution is billings less commission accrued on the sales sheet, cost and a per-head share of non-payroll overhead from Xero. The 3-month multiple covers the last three closed months.':''}</p>
+    <div class="tbl cmp"><table><thead><tr><th>Name</th><th>Base pay</th><th>Super</th><th>On-costs</th><th>Cost</th><th>Comm. paid</th>
+      ${d.fee?`<th>Billings</th><th>Break-even</th>${goal()?'<th>Target</th>':''}<th>Gap</th><th>3-mth ×</th><th>Contrib.</th>`:''}</tr></thead><tbody>
+    ${rows.map(r=>{const x=r.a, gp=goal()?x.gap:x.b-x.bev, sup=isSup(r)&&!x.b, r3=roll3(r);return `<tr${TIP(empTip(r))}><td><b style="color:var(--ink)">${esc(r.name)}</b>${x.est?'<span class="est">est.</span>':''}<br><span class="mut" style="font-size:12px">${esc(r.role||r.type||'')}</span></td>
+      <td>${F(x.g)}</td><td>${F(x.s)}</td><td>${F(x.pt+x.wc)}</td><td style="font-weight:700">${F(x.c)}</td>
+      <td class="${x.cm?'':'mut'}">${x.cm?F(x.cm):'—'}</td>
+      ${d.fee?`<td>${x.b?F(x.b):'<span class="mut">nil</span>'}</td><td class="mut">${x.c&&!sup?F(x.bev):'—'}</td>${goal()?`<td>${x.c&&!sup?F(x.tgt):'—'}</td>`:''}
+      <td class="${!x.c||sup?'mut':gp>=0?'pos':'neg'}">${sup?'desk support':!x.c?'—':(gp>=0?'+'+F(gp):F(gp))}</td>
+      <td class="${r3.c&&!sup&&!r.agg?mvc(r3.mult):'mut'}">${r3.c&&!sup&&!r.agg?X(r3.mult):'—'}</td>
+      <td class="${x.ct>=0?'pos':'neg'}">${F(x.ct)}</td>`:''}</tr>`}).join('')}
+    ${a.team?`<tr class="sub"><td>Team line in the sales sheet</td><td colspan="5"></td><td>${F(a.team)}</td><td colspan="${goal()?5:4}"></td></tr>`:''}
+    <tr class="tot"><td>${esc(d.label)}</td><td>${F(a.g)}</td><td>${F(a.s)}</td><td>${F(a.pt+a.wc)}</td><td>${F(a.c)}</td><td>${a.cm?F(a.cm):'—'}</td>
+      ${d.fee?`<td>${F(a.b)}</td><td class="mut">${F(a.bev)}</td>${goal()?`<td>${F(a.tgt)}</td>`:''}<td class="${a.b-ref>=0?'pos':'neg'}">${F(a.b-ref)}</td>
+      <td>${(()=>{const r=a.mem.map(roll3).reduce((s,x)=>({c:s.c+x.c,b:s.b+x.b}),{c:0,b:0});return r.c?X(r.b/r.c):'—';})()}</td><td class="${a.ct>=0?'pos':'neg'}">${F(a.ct)}</td>`:''}</tr>
     </tbody></table></div></section>`;
 }
 
 /* ---------- checks ---------- */
+function deriveTable(ent){
+  const dv=DATA.mult.derive||{}, rows=dv[ent]||[], t=dv[ent+'tot'], g=(DATA.ents[ent]||{}).short||ent, gl=ent==='R';
+  if(!rows.length) return '';
+  const r1=(lab,x,cls)=>{const cm=x.fees?(x.fees-x.dcos)/x.fees:0;return `<tr class="${cls||''}"><td>${lab}</td><td>${F(x.fees)}</td><td>${F(x.dcos)}</td><td>${(cm*100).toFixed(1)}%</td><td>${F(x.opex)}</td>${gl?`<td>${F(x.goal)}</td>`:''}<td>${F(x.pay)}</td><td>${(x.be||0).toFixed(2)}×</td>${gl?`<td>${(x.tg||0).toFixed(2)}×</td>`:''}</tr>`;};
+  return `<h3 style="font-size:14.5px;color:var(--ink);margin:18px 0 8px">${esc(g)}</h3><div class="tbl"><table><thead><tr><th>Month</th><th>Permanent fees</th><th>Direct costs</th><th>Margin</th><th>Cost base</th>${gl?'<th>Profit goal</th>':''}<th>Fee-team cost</th><th>Break-even</th>${gl?'<th>Target</th>':''}</tr></thead><tbody>
+    ${rows.map(r=>r1(esc(monthLab(r.m)),r)).join('')}${t?r1('Closed months together (adopted, 2 decimals)',t,'tot'):''}</tbody></table></div>`;
+}
 function checks(){
-  const w=DATA.warnings||[], x=DATA.excluded||[];
-  const exT=x.reduce((s,r)=>s+r.amt,0);
-  return `<section class="blk"><div class="hd"><h2>Data checks</h2><div class="rt">Refreshed ${esc(DATA.generated)}</div></div>
-    <div class="flag ok"><div><div class="ft">Sources</div><div class="fd">Sales sheet read live. Payroll last synced from FoundU ${esc(DATA.payrollSyncedAt||'unknown')}; latest paid month ${esc(DATA.lastPaidMonth||'none')}.
-      Payroll tax ${(DATA.rates.pt*100).toFixed(3)}% and WorkCover ${(DATA.rates.wc*100).toFixed(3)}% from the data sheet. Multiples: ${esc(DATA.mult.BASIS)}.</div></div></div>
-    ${w.length?w.map(r=>`<div class="flag ${r.lvl==='high'?'hi':''}"><div><div class="ft">${esc(r.t)}</div><div class="fd">${esc(r.d)}</div></div></div>`).join('')
+  const w=DATA.warnings||[], x=DATA.excluded||[], ch=DATA.changes||[];
+  const exT=x.reduce((s,r)=>s+r.amt,0), dv=DATA.mult.derive||{};
+  return `<section class="blk"><div class="hd"><h2>How the figures are built</h2><div class="rt">Refreshed ${esc(DATA.generated)}</div></div>
+    <div class="flag ok"><div><div class="ft">Cost</div><div class="fd">Closed months: FoundU base pay, leave and package allowances plus super, from ${esc(DATA.payrollSource||'FoundU')}.
+      Pay runs are weekly, so a month holds 4 or 5 pays; each closed month is normalised to a calendar month (days ÷ 7 weeks). Commission, bonus and termination payments are shown separately and are not in cost.
+      The current month uses each person's salaried FoundU pay rate for the days employed to date (Employee_Map salary if there is none). Payroll tax ${(DATA.rates.pt*100).toFixed(3)}% and WorkCover ${(DATA.rates.wc*100).toFixed(3)}% from the data sheet.
+      Payroll last synced ${esc(DATA.payrollSyncedAt||'unknown')}.</div></div></div>
+    <div class="flag ok"><div><div class="ft">Multiples: ${esc(DATA.mult.BASIS)}</div><div class="fd">${dv.override?'A Dashboard_Settings tab in the data sheet overrides the derived multiples.':
+      'Break-even = cost base ÷ margin ÷ fee-team cost. Target = (cost base + monthly profit goal) ÷ margin ÷ fee-team cost. Permanent recruitment only: temporary revenue and costs, the Search recharge, service income, grants and interest are excluded, as in the August 2026 report. Each person\'s target is their own cost × the multiple.'}</div></div></div>
+    ${deriveTable('R')}${deriveTable('S')}
+  </section>
+  <section class="blk"><div class="hd"><h2>Exceptions</h2><div class="rt">${w.length} items</div></div>
+    ${w.length?w.map(r=>`<div class="flag ${r.lvl==='high'?'hi':r.lvl==='low'?'ok':''}"><div><div class="ft">${esc(r.t)}</div><div class="fd">${esc(r.d)}</div></div></div>`).join('')
       :'<div class="flag ok"><div><div class="ft">No exceptions</div><div class="fd">Every sales line matched an employee and every paid employee has a department.</div></div></div>'}
   </section>
+  ${ch.length?`<section class="blk"><div class="hd"><h2>Changed since close</h2><div class="rt">Against the month-end snapshot</div></div>
+    <div class="tbl"><table><thead><tr><th>Item</th><th>Month</th><th>Source</th><th>At close</th><th>Now</th><th>Change</th></tr></thead><tbody>
+    ${ch.map(c=>`<tr><td>${esc(c.what)}</td><td class="tx">${esc(monthLab(c.m))}</td><td class="tx mut">${esc(c.kind)}</td><td>${F2(c.was)}</td><td>${F2(c.now)}</td><td class="${c.now-c.was>=0?'pos':'neg'}">${F2(c.now-c.was)}</td></tr>`).join('')}
+    </tbody></table></div></section>`:''}
   <section class="blk"><div class="hd"><h2>Sales lines excluded</h2><div class="rt">${DATA.fy} to date</div></div>
     <div class="tbl"><table><thead><tr><th>Line</th><th>Department</th><th>Month</th><th>Amount</th><th>Reason</th></tr></thead><tbody>
     ${x.length?x.map(r=>`<tr><td>${esc(r.name)}</td><td class="tx">${esc(r.dept)}</td><td class="tx">${esc(r.month)}</td><td>${F(r.amt)}</td><td class="tx mut">${esc(r.why)}</td></tr>`).join('')
@@ -593,7 +662,7 @@ function paint(){
   if(!DATA) return;
   const e=DATA.ents[ENT], mm=M();
   document.getElementById('mName').textContent=e.name;
-  document.getElementById('mBasis').textContent='Multiples: '+DATA.mult.BASIS;
+  document.getElementById('mBasis').textContent='Multiples '+DATA.mult.BASIS;
   document.getElementById('mLede').innerHTML=goal()
     ?`Billings for each person and department against fully loaded employment cost. Break-even is cost × ${mm.be.toFixed(2)}; the profit target is cost × ${mm.tg.toFixed(2)}.`
     :`Billings against fully loaded employment cost. No profit goal is set for ${esc(e.short)}, so break-even at cost × ${mm.be.toFixed(2)} is the only marker.`;
