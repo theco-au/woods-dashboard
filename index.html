@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://accounts.google.com/gsi/client; style-src 'unsafe-inline' https://accounts.google.com/gsi/style; img-src data: https://lh3.googleusercontent.com; frame-src https://accounts.google.com/gsi/; connect-src https://script.google.com https://script.googleusercontent.com https://accounts.google.com/gsi/; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23131210%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-family=%27Arial%27 font-weight=%27700%27 font-size=%2716%27 fill=%27%23fff%27 text-anchor=%27middle%27%3EW%3C/text%3E%3C/svg%3E">
+<title>Woods Group Dashboard</title>
+<style>
+  :root{
+    --ink:#16150f; --body:#575349; --mid:#8a857a; --faint:#a8a297;
+    --line:#e2ded4; --line2:#efece4; --paper:#f7f5f0; --card:#fff; --black:#131210;
+    --sans:'Aptos','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+    --mono:'Aptos Mono','Cascadia Mono','Consolas',ui-monospace,monospace;
+    --gain:#2f6b4d; --gain-bg:#e3efe7; --loss:#a8492f; --loss-bg:#f7e7e1;
+    --bench:#b08424; --bench-bg:#f9f0dc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--body);background:var(--paper);line-height:1.6;font-size:15px;
+       -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  @media(max-width:600px){.wrap{padding:0 16px}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  .entbar{background:#080807;border-bottom:1px solid #262320;padding:9px 0}
+  .entbar .wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .entbar label{font-size:11px;font-weight:700;letter-spacing:.1em;color:#6f6a61;text-transform:uppercase}
+  .entbar select{font-family:var(--sans);font-size:14px;font-weight:700;color:#fff;background:#1d1b18;
+    border:1px solid #35312c;border-radius:8px;padding:8px 34px 8px 13px;cursor:pointer;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4.5L6 8.5L10 4.5' stroke='%23a7a197' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center}
+  .entbar select:focus-visible,.rbtn:focus-visible{outline:2px solid #c9a94f;outline-offset:1px}
+  .entbar .entnote{font-size:12px;color:#6f6a61}
+  .entbar .sp{flex:1}
+  .rbtn{font-family:var(--sans);font-size:13px;font-weight:700;color:#16150f;background:#e9e2cf;border:none;
+    border-radius:8px;padding:8px 14px;cursor:pointer}
+  .rbtn:hover{background:#fff}
+  .rbtn[disabled]{opacity:.55;cursor:wait}
+  .asat{font-size:12px;color:#8f8a80}
+  .me{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:#ddd8cd;padding-left:4px}
+  .me[hidden]{display:none}
+  .me img{width:24px;height:24px;border-radius:50%;display:block}
+  .me .ini{width:24px;height:24px;border-radius:50%;background:#35312c;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .lnk{background:none;border:none;color:#a7a197;font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;padding:0}
+  .lnk:hover{color:#fff}
+  .brand{display:flex;align-items:center;gap:14px}
+  .wlogo{height:40px;width:auto;display:block;fill:#fff}
+  .brand .x{width:1px;height:30px;background:#3a352e}
+  body.locked .entbar .ctl,body.locked header.top,body.locked main{display:none}
+  .gate{display:none;min-height:70vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--black)}
+  body.locked .gate{display:flex}
+  .gcard{max-width:440px;width:100%;text-align:center;color:#ddd8cd}
+  .gcard .brand{justify-content:center;margin-bottom:26px}
+  .gcard h1{font-size:26px;color:#fff;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+  .gcard p{font-size:14px;color:#a7a197;margin-bottom:22px}
+  #gbtn{display:flex;justify-content:center;min-height:44px}
+  #gmsg{margin-top:18px;font-size:13.5px;color:#e88c78;min-height:1em}
+  .entbar label.xtog{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:0;
+    text-transform:none;color:#bdb7ab;cursor:pointer;user-select:none}
+  .xtog input{appearance:none;width:30px;height:17px;border-radius:9px;background:#35312c;position:relative;cursor:pointer;margin:0;transition:.15s}
+  .xtog input::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#8f8a80;transition:.15s}
+  .xtog input:checked{background:#59a37c}.xtog input:checked::after{left:15px;background:#fff}
+  .xtog input:focus-visible{outline:2px solid #c9a94f;outline-offset:2px}
+  .st{display:inline-block;font-family:var(--sans);font-size:12px;font-weight:600;padding:2px 9px;border-radius:12px;white-space:nowrap}
+  .st.ok{background:var(--gain-bg);color:var(--gain)}.st.mid{background:var(--bench-bg);color:var(--bench)}
+  .st.bad{background:var(--loss-bg);color:var(--loss)}.st.na{background:#eeebe4;color:var(--mid)}
+
+  header.top{background:var(--black);color:#f2efe8;padding:30px 0 0}
+  .hd-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:26px;flex-wrap:wrap}
+  .logo{height:30px;width:auto;display:block}.logo path{fill:#fff}
+  .hd-meta{font-size:11.5px;color:#8f8a80;text-align:right;line-height:1.75}
+  .hd-meta b{color:#ddd8cd;font-weight:600;display:block;font-size:12.5px}
+  header.top h1{font-size:clamp(25px,3.6vw,37px);font-weight:800;letter-spacing:-.028em;color:#fff;line-height:1.06;margin-bottom:9px}
+  header.top .lede{color:#bdb7ab;max-width:760px;font-size:15.5px;margin-bottom:26px}
+  .tabs{display:flex;gap:2px;flex-wrap:wrap}
+  .tab{background:#1d1b18;color:#a7a197;border:none;padding:12px 16px 14px;font-family:var(--sans);font-size:14px;
+       font-weight:600;cursor:pointer;border-radius:9px 9px 0 0;white-space:nowrap;transition:.14s}
+  .tab .sub{display:block;font-size:11px;font-weight:400;color:#78736a;margin-top:2px}
+  .tab:hover{color:#e9e5dc}
+  .tab.on{background:var(--paper);color:var(--ink)}
+  .tab.on .sub{color:var(--mid)}
+  .tab:focus-visible{outline:2px solid #c9a94f;outline-offset:-2px}
+
+  .perbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+  .pseg{display:inline-flex;background:#1d1b18;border:1px solid #2e2b27;border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap}
+  .pseg button{border:none;background:transparent;font-family:var(--sans);font-size:13.5px;font-weight:600;
+    color:#a7a197;padding:7px 14px;border-radius:7px;cursor:pointer;transition:.14s}
+  .pseg button:hover{color:#e9e5dc}
+  .pseg button.on{background:var(--paper);color:var(--ink)}
+  .pseg button:focus-visible{outline:2px solid #c9a94f;outline-offset:1px}
+  .perlab{font-size:12.5px;color:#8f8a80}
+
+  main{padding:32px 0 80px}
+  h2{font-size:19px;color:var(--ink);font-weight:700;letter-spacing:-.015em;line-height:1.25}
+  .blk{margin-bottom:38px}
+  .blk>.hd{border-bottom:1.5px solid var(--ink);padding-bottom:9px;margin-bottom:18px;display:flex;
+           justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .blk>.hd .rt{font-size:12.5px;color:var(--mid)}
+  .note{font-size:13.5px;color:var(--body);max-width:80ch;margin-bottom:16px}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:13px;margin-bottom:34px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px 19px 19px}
+  .kpi .lab{font-size:12.5px;color:var(--mid);font-weight:600;margin-bottom:11px}
+  .kpi .val{font-family:var(--mono);font-size:27px;font-weight:700;color:var(--ink);letter-spacing:-.035em;line-height:1}
+  .kpi .sub{font-size:12.5px;color:var(--mid);margin-top:8px;line-height:1.45}
+  .kpi .chip{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:600;margin-top:10px;padding:3px 9px;border-radius:14px}
+  .chip.up{background:var(--gain-bg);color:var(--gain)}
+  .chip.dn{background:var(--loss-bg);color:var(--loss)}
+  .chip.nu{background:#eeebe4;color:var(--mid)}
+
+  .beb{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .beb .lg{display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line2);
+           font-size:12px;color:var(--mid);background:#fbfaf7}
+  .beb .lg i{display:inline-block;width:13px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+  .beb .lg i.c{background:#4a463e}.beb .lg i.g{background:#59a37c}.beb .lg i.r{background:#c4735a}
+  .beb .lg i.b{background:transparent;border-left:2.5px dashed var(--bench);width:3px;border-radius:0}
+  .beb .lg i.bb{background:transparent;border-left:2px solid #7d776a;width:3px;border-radius:0}
+  .row{display:grid;grid-template-columns:190px 1fr 108px 74px;gap:16px;align-items:center;padding:13px 20px;border-bottom:1px solid var(--line2)}
+  .row:last-child{border-bottom:none}
+  .row:hover{background:#fbfaf7}
+  .row .who .nm{font-size:14.5px;color:var(--ink);font-weight:600;line-height:1.3}
+  .row .who .rl{font-size:11.5px;color:var(--faint);line-height:1.4}
+  .track{position:relative;height:34px}
+  .track .base{position:absolute;top:11px;left:0;right:0;height:13px;background:#f0ede6;border-radius:3px}
+  .seg{position:absolute;top:11px;height:13px;border-radius:2px}
+  .seg.cost{background:#4a463e;border-radius:3px 0 0 3px}
+  .seg.gain{background:#59a37c}
+  .seg.short{background:repeating-linear-gradient(45deg,#e8c4b6,#e8c4b6 4px,#f2dbd1 4px,#f2dbd1 8px);border:1px solid #d9a998}
+  .bench{position:absolute;top:5px;height:25px;border-left:2.5px dashed var(--bench);z-index:3}
+  .bevm{position:absolute;top:7px;height:21px;width:0;border-left:2px solid #7d776a;z-index:2;opacity:.85}
+  .bench b{position:absolute;top:-14px;left:3px;font-family:var(--mono);font-size:9.5px;color:var(--bench);font-weight:700;white-space:nowrap}
+  .row .amt{text-align:right;font-family:var(--mono);font-size:14.5px;color:var(--ink);font-weight:600}
+  .row .amt small{display:block;font-size:11px;color:var(--faint);font-weight:400}
+  .mx{text-align:right;font-family:var(--mono);font-size:16px;font-weight:700;letter-spacing:-.03em}
+  .mx.ok{color:var(--gain)}.mx.mid{color:var(--bench)}.mx.bad{color:var(--loss)}.mx.zero{color:var(--faint)}
+  .mx small{display:block;font-size:10.5px;color:var(--faint);font-weight:500}
+  @media(max-width:860px){
+    .row{grid-template-columns:1fr 84px;gap:8px 12px}
+    .track{grid-column:1/-1;order:3}.row .amt{order:2}.mx{order:1;text-align:left}
+    .row .who{order:0;grid-column:1/-1}
+  }
+
+  table{width:100%;border-collapse:collapse;font-size:14px;background:var(--card)}
+  .tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden;overflow-x:auto}
+  th,td{padding:11px 15px;text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left;white-space:normal;min-width:168px}
+  thead th{font-size:11.5px;color:var(--mid);font-weight:600;background:#fbfaf7;border-bottom:1.5px solid var(--line)}
+  tbody td{border-bottom:1px solid var(--line2);font-family:var(--mono);color:var(--ink)}
+  tbody td:first-child{font-family:var(--sans);color:var(--body);font-weight:500}
+  tbody tr:last-child td{border-bottom:none}
+  tr.tot td{background:#f4f1ea;font-weight:700;color:var(--ink);border-top:1.5px solid var(--line)}
+  tr.sub td{color:var(--mid);font-size:13px}
+  td.tx{font-family:var(--sans);text-align:left}
+  .tbl.cmp th,.tbl.cmp td{padding:11px 10px}.tbl.cmp th:first-child,.tbl.cmp td:first-child{min-width:64px}
+  .pos{color:var(--gain)}.neg{color:var(--loss)}.mut{color:var(--faint)}.amb{color:var(--bench)}
+  .est{font-family:var(--sans);font-size:11px;font-weight:700;color:var(--bench);background:var(--bench-bg);padding:1px 6px;border-radius:9px;margin-left:6px}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.two{grid-template-columns:1fr}}
+  .flag{display:flex;gap:12px;padding:13px 16px;border-radius:10px;background:var(--card);
+        border:1px solid var(--line);border-left:3px solid var(--bench);margin-bottom:9px;align-items:flex-start}
+  .flag.hi{border-left-color:var(--loss)}
+  .flag.ok{border-left-color:var(--gain)}
+  .flag .ft{font-size:13.5px;color:var(--ink);font-weight:600}
+  .flag .fd{font-size:13px;color:var(--body);margin-top:2px}
+  .load{font-family:var(--mono);color:var(--mid);font-size:13px}
+  .loading{padding:80px 0;text-align:center;color:var(--mid);font-size:15px}
+  .err{background:var(--loss-bg);color:var(--loss);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:14px}
+
+  .tip{position:fixed;z-index:999;display:none;background:#171613;color:#e9e5dc;border:1px solid #35312c;
+    border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;max-width:330px;box-shadow:0 10px 28px rgba(0,0,0,.3);pointer-events:none}
+  .tip .th{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
+  .tip .ts{font-size:11.5px;color:#8f8a80;margin-bottom:9px}
+  .tip table{width:100%;border-collapse:collapse;font-size:12px;background:transparent}
+  .tip{width:max-content;max-width:min(400px,calc(100vw - 16px))}
+  .tip td:first-child{min-width:0;white-space:normal;font-weight:400;color:#bdb7ab}
+  .tip td{padding:3px 0;border:none;color:#bdb7ab;text-align:left;white-space:nowrap;font-family:var(--sans)}
+  .tip td:last-child{text-align:right;font-family:var(--mono);color:#e9e5dc;padding-left:16px}
+  .tip tr.s td{border-top:1px solid #3a352e;padding-top:6px;color:#fff;font-weight:600}
+  .tip tr.g td{border-top:1px solid #3a352e;padding-top:6px}
+  .tip .up{color:#7fc4a2}.tip .dn{color:#e88c78}
+  [data-tip]{cursor:help}
+  [data-tip]:focus-visible{outline:2px solid var(--bench);outline-offset:1px}
+
+  footer{background:var(--black);color:#b6b1a6;padding:30px 0 36px;font-size:12.5px;line-height:1.65}
+  footer .logo{height:22px;margin-bottom:14px}footer .logo path{fill:#e4e0d6}
+  footer b{color:#ddd8cd;font-weight:600}
+  footer p{max-width:92ch;margin-top:9px}
+</style>
+<script src="https://accounts.google.com/gsi/client" async></script>
+</head>
+<body>
+
+<div class="entbar"><div class="wrap">
+  <label class="ctl" for="entsel">Entity</label>
+  <select class="ctl" id="entsel" aria-label="Select entity"></select>
+  <span class="sp"></span>
+  <label class="xtog ctl" for="xon"><input type="checkbox" id="xon" checked> Xero figures</label>
+  <span class="asat ctl" id="asat"></span>
+  <button class="rbtn ctl" id="refresh" type="button">Refresh data</button>
+  <span class="me" id="who" hidden><span id="whoPic"></span><span id="whoName"></span><button class="lnk" id="signout" type="button">Sign out</button></span>
+</div></div>
+
+<section class="gate" aria-labelledby="gt"><div class="gcard">
+  <div class="brand"><svg class="logo" role="img" aria-label="The Co." viewBox="0 0 851 112.22" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0 -0.418)"><path d="M74.81,0.42H4.68C2.13,0.49,0.08,2.54,0,5.09v18.7c0,2.47,2.2,0,4.68,0h18.7v84.16c0.13,2.53,2.15,4.54,4.68,4.68h18.7c2.53-0.13,4.55-2.15,4.68-4.68V23.8h23.38c2.47,0,4.68,2.47,4.68,0V5.09C79.41,2.54,77.36,0.49,74.81,0.42z"/><path d="M229.12,0.42h-18.7c-2.55,0.08-4.6,2.13-4.68,4.68V42.5h-42.08V5.09c-0.08-2.55-2.13-4.6-4.68-4.68h-18.7c-2.53,0.13-4.55,2.15-4.68,4.68v102.87c0.13,2.53,2.15,4.55,4.68,4.68h18.7c2.55-0.08,4.6-2.13,4.68-4.68V70.56h42.08v37.41c0.08,2.55,2.13,4.6,4.68,4.68h18.7c2.53-0.13,4.54-2.15,4.68-4.68V5.09C233.66,2.57,231.64,0.55,229.12,0.42z"/><path d="M369.39,23.8c2.47,0,4.68,2.47,4.68,0V5.09c-0.08-2.55-2.13-4.6-4.68-4.68h-65.46c-2.55,0.08-4.6,2.13-4.68,4.68v102.87c0.08,2.55,2.13,4.6,4.68,4.68h65.46c2.55-0.08,4.6-2.13,4.68-4.68v-18.7c-0.08-2.55-2.13-4.6-4.68-4.68h-42.08V70.56h37.41c2.55-0.08,4.6-2.13,4.68-4.68v-18.7c-0.13-2.52-2.15-4.54-4.68-4.68h-37.41V23.8H369.39z"/><path d="M593.83,79.91c-1.45-1.7-2.89-1.53-4.68,0c-5.21,4.48-16.04,4.68-23.38,4.68c-14.67,0.82-27.23-10.4-28.05-25.07c-0.06-0.99-0.06-1.99,0-2.98c0-17.27,11.67-32.73,28.05-32.73c8.57,0.63,16.74,3.9,23.38,9.35c0.81,0.82-1.14,0,0,0l0,0c1.14,0,3.84,0.84,4.68,0l14.03-14.03c0.94-0.94,0.04-3.45,0-4.68c-0.04-1.23,0.97,0.87,0,0c-11.76-9.8-26.79-14.81-42.08-14.03c-30.26-0.72-55.39,23.22-56.11,53.49c-0.02,0.87-0.02,1.75,0,2.62c-0.67,30.32,23.38,55.44,53.7,56.11c0.8,0.02,1.61,0.02,2.41,0c15.07,0,31.53-3.78,42.08-14.03c1.29-0.86,1.64-2.6,0.79-3.89c-0.21-0.31-0.47-0.58-0.79-0.79L593.83,79.91z"/><path d="M715.4,0.42c-30.32-0.67-55.44,23.38-56.11,53.7c-0.02,0.8-0.02,1.61,0,2.41c0,30.99,25.12,56.11,56.11,56.11c30.99,0,56.11-25.12,56.11-56.11c0.7-30.29-23.29-55.41-53.58-56.11C717.09,0.4,716.24,0.4,715.4,0.42z M715.4,28.47c14.82-0.68,27.38,10.79,28.05,25.61c0.04,0.82,0.04,1.63,0,2.45c0,15.49-12.56,28.05-28.05,28.05s-28.05-12.56-28.05-28.05c-0.65-14.84,10.86-27.41,25.7-28.05C713.83,28.44,714.62,28.44,715.4,28.47z"/><path d="M832.3,75.23c-10.33,0-18.7,8.37-18.7,18.7s8.37,18.7,18.7,18.7s18.7-8.37,18.7-18.7C850.97,83.62,842.61,75.26,832.3,75.23z"/></g></svg><span class="x"></span><svg class="wlogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 138 65" role="img" aria-label="Woods &amp; Co.">
+<path d="M73.4 34.1C65.6 34.1 60.6 39.4 60.6 47.5C60.6 55.7 65.6 61.0 73.4 61.0C81.2 61.0 86.2 55.8 86.2 47.5C86.2 39.3 81.2 34.1 73.4 34.1ZM79.2 47.5C79.2 49.8 78.7 55.1 73.4 55.1C68.1 55.1 67.6 50.4 67.6 47.5C67.6 45.3 68.1 40.0 73.4 40.0C78.7 40.0 79.2 45.3 79.2 47.5Z"/>
+<path d="M27.8 49.9L27.9 49.3L22.6 46.8L22.4 47.9C22.4 48.5 22.3 49.2 22.1 49.8L19.9 47.2C22.3 45.7 24.3 43.9 24.3 40.7C24.3 37.6 22.0 34.3 17.0 34.3C12.0 34.3 9.6 37.7 9.6 40.9C9.6 42.5 10.2 44.1 11.2 45.4C9.8 46.0 8.6 47.1 7.7 48.4C6.8 49.8 6.4 51.3 6.3 52.9C6.3 58.1 9.9 61.1 16.0 61.1C18.3 61.2 20.6 60.6 22.5 59.3L23.8 60.7H31.6L26.2 54.7C27.1 53.2 27.6 51.6 27.8 49.9ZM18.9 54.9C18.0 55.5 17.0 55.8 16.0 55.8C15.6 55.8 15.1 55.8 14.7 55.6C14.4 55.5 14.0 55.3 13.7 55.0C13.4 54.7 13.2 54.4 13.0 54.0C12.9 53.6 12.8 53.2 12.8 52.8C12.8 52.2 13.0 51.6 13.3 51.0C13.6 50.5 14.0 50.1 14.5 49.8L18.9 54.9ZM15.5 40.7C15.5 39.7 16.0 39.3 16.9 39.3C17.3 39.3 18.2 39.3 18.2 40.7C18.2 41.8 17.6 42.3 16.5 42.9C15.9 42.3 15.5 41.6 15.5 40.7L15.5 40.7Z"/>
+<path d="M51.2 51.5C51.0 52.6 50.4 53.5 49.6 54.2C48.7 54.8 47.7 55.2 46.6 55.1C41.3 55.1 40.7 49.8 40.7 47.5C40.7 42.8 42.9 40.0 46.4 40.0C47.5 39.9 48.6 40.2 49.4 40.9C50.3 41.6 50.9 42.6 51.0 43.7L51.3 44.4L58.0 42.2L57.8 41.4C56.1 36.5 52.2 34.0 46.6 34.0C38.7 34.1 33.8 39.3 33.8 47.5C33.8 55.8 38.7 61.0 46.6 61.0C52.1 61.0 56.1 58.4 57.8 53.8L58.1 53.1L51.5 50.8L51.2 51.5Z"/>
+<path d="M14.0 30.2L14.2 29.6C14.7 27.8 15.1 26.0 15.5 24.2L16.6 19.8C16.8 18.6 17.1 17.5 17.3 16.4L18.2 20.4L18.8 23.1C19.3 25.1 19.8 27.2 20.2 29.5L20.4 30.2H27.8L34.5 4.1H27.8L27.7 4.7C27.4 5.7 27.2 6.6 27.0 7.5C26.7 9.1 26.3 10.6 25.9 12.1V12.5C25.4 14.9 24.7 17.4 24.3 19.6C23.8 17.6 23.2 15.3 22.7 13.1L22.5 12.1C22.1 10.5 21.7 9.1 21.4 7.5C21.2 6.6 21.0 5.7 20.7 4.7L20.5 4.1H14.2L14.1 4.7C13.9 5.6 13.7 6.4 13.5 7.3C13.1 8.9 12.7 10.5 12.4 12.1L12.1 13.2C11.5 15.5 11.0 17.8 10.5 19.7C10.1 17.5 9.4 14.7 8.9 12.1C8.6 10.6 8.2 9.0 7.7 7.3C7.5 6.4 7.3 5.6 7.1 4.7L7.0 4.1H0L6.7 30.2H14.0Z"/>
+<path d="M128.8 14.1C124.4 13.2 123.6 12.6 123.6 11.4C123.6 9.8 125.6 9.5 126.7 9.5C127.2 9.4 127.6 9.4 128.1 9.5C128.5 9.7 128.9 9.9 129.3 10.1C129.6 10.4 129.9 10.8 130.1 11.2C130.3 11.5 130.5 12.0 130.5 12.4L130.7 13.3L137.6 11.8L137.5 11.1C136.7 6.6 132.6 3.8 126.9 3.8C120.5 3.8 116.6 6.8 116.6 11.8C116.6 17.5 121.4 19.1 126.5 20.0C130.7 20.7 131.0 21.6 131.0 22.6C131.0 24.7 128.4 24.9 127.2 24.9C124.7 24.9 123.3 23.7 123.1 21.6V20.7L116.2 21.7V22.4C116.3 26.5 120.2 30.6 127.2 30.6C133.6 30.6 138 27.3 138 22.3C138 17.6 135.2 15.1 128.8 14.1Z"/>
+<path d="M75.9 3.8C74.3 3.7 72.6 3.9 71.1 4.5C69.5 5.1 68.1 5.9 66.9 7.1C65.6 8.4 64.6 10.0 64.0 11.7C63.3 13.5 63.1 15.3 63.2 17.2C63.2 25.4 68.2 30.6 75.9 30.6C83.7 30.6 88.7 25.4 88.7 17.2C88.7 9.1 83.7 3.8 75.9 3.8ZM75.9 24.8C70.7 24.8 70.1 19.5 70.1 17.2C70.1 14.9 70.7 9.6 75.9 9.6C81.2 9.6 81.8 14.9 81.8 17.2C81.8 19.5 81.2 24.8 75.9 24.8H75.9Z"/>
+<path d="M47.5 3.8C45.9 3.7 44.2 3.9 42.7 4.5C41.2 5.1 39.7 5.9 38.5 7.1C37.3 8.4 36.3 10.0 35.6 11.8C35.0 13.5 34.7 15.3 34.7 17.2C34.7 25.4 39.8 30.6 47.5 30.6C55.3 30.6 60.3 25.4 60.3 17.2C60.3 9.1 55.3 3.8 47.5 3.8ZM53.5 17.2C53.5 19.5 53.0 24.8 47.7 24.8C42.4 24.8 41.8 19.4 41.8 17.2C41.8 15.0 42.4 9.6 47.7 9.6C53.0 9.6 53.5 14.9 53.5 17.2Z"/>
+<path d="M101.5 4.2H91.6V30.2H101.5C109.6 30.2 114.4 25.3 114.4 17.2C114.4 9.1 109.6 4.2 101.5 4.2ZM107.3 17.2C107.3 21.9 105.3 24.3 101.3 24.3H98.3V10.1H101.3C105.3 10.1 107.3 12.5 107.3 17.2Z"/>
+</svg></div>
+  <h1 id="gt">Woods Group Live Dashboard</h1>
+  <p>Sign in with your Google account. Access is limited to people approved by The Co.</p>
+  <div id="gbtn"></div>
+  <div id="gmsg" role="status"></div>
+</div></section>
+
+<header class="top"><div class="wrap">
+  <div class="hd-row">
+    <svg class="logo" role="img" aria-label="The Co." viewBox="0 0 851 112.22" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0 -0.418)"><path d="M74.81,0.42H4.68C2.13,0.49,0.08,2.54,0,5.09v18.7c0,2.47,2.2,0,4.68,0h18.7v84.16c0.13,2.53,2.15,4.54,4.68,4.68h18.7c2.53-0.13,4.55-2.15,4.68-4.68V23.8h23.38c2.47,0,4.68,2.47,4.68,0V5.09C79.41,2.54,77.36,0.49,74.81,0.42z"/><path d="M229.12,0.42h-18.7c-2.55,0.08-4.6,2.13-4.68,4.68V42.5h-42.08V5.09c-0.08-2.55-2.13-4.6-4.68-4.68h-18.7c-2.53,0.13-4.55,2.15-4.68,4.68v102.87c0.13,2.53,2.15,4.55,4.68,4.68h18.7c2.55-0.08,4.6-2.13,4.68-4.68V70.56h42.08v37.41c0.08,2.55,2.13,4.6,4.68,4.68h18.7c2.53-0.13,4.54-2.15,4.68-4.68V5.09C233.66,2.57,231.64,0.55,229.12,0.42z"/><path d="M369.39,23.8c2.47,0,4.68,2.47,4.68,0V5.09c-0.08-2.55-2.13-4.6-4.68-4.68h-65.46c-2.55,0.08-4.6,2.13-4.68,4.68v102.87c0.08,2.55,2.13,4.6,4.68,4.68h65.46c2.55-0.08,4.6-2.13,4.68-4.68v-18.7c-0.08-2.55-2.13-4.6-4.68-4.68h-42.08V70.56h37.41c2.55-0.08,4.6-2.13,4.68-4.68v-18.7c-0.13-2.52-2.15-4.54-4.68-4.68h-37.41V23.8H369.39z"/><path d="M593.83,79.91c-1.45-1.7-2.89-1.53-4.68,0c-5.21,4.48-16.04,4.68-23.38,4.68c-14.67,0.82-27.23-10.4-28.05-25.07c-0.06-0.99-0.06-1.99,0-2.98c0-17.27,11.67-32.73,28.05-32.73c8.57,0.63,16.74,3.9,23.38,9.35c0.81,0.82-1.14,0,0,0l0,0c1.14,0,3.84,0.84,4.68,0l14.03-14.03c0.94-0.94,0.04-3.45,0-4.68c-0.04-1.23,0.97,0.87,0,0c-11.76-9.8-26.79-14.81-42.08-14.03c-30.26-0.72-55.39,23.22-56.11,53.49c-0.02,0.87-0.02,1.75,0,2.62c-0.67,30.32,23.38,55.44,53.7,56.11c0.8,0.02,1.61,0.02,2.41,0c15.07,0,31.53-3.78,42.08-14.03c1.29-0.86,1.64-2.6,0.79-3.89c-0.21-0.31-0.47-0.58-0.79-0.79L593.83,79.91z"/><path d="M715.4,0.42c-30.32-0.67-55.44,23.38-56.11,53.7c-0.02,0.8-0.02,1.61,0,2.41c0,30.99,25.12,56.11,56.11,56.11c30.99,0,56.11-25.12,56.11-56.11c0.7-30.29-23.29-55.41-53.58-56.11C717.09,0.4,716.24,0.4,715.4,0.42z M715.4,28.47c14.82-0.68,27.38,10.79,28.05,25.61c0.04,0.82,0.04,1.63,0,2.45c0,15.49-12.56,28.05-28.05,28.05s-28.05-12.56-28.05-28.05c-0.65-14.84,10.86-27.41,25.7-28.05C713.83,28.44,714.62,28.44,715.4,28.47z"/><path d="M832.3,75.23c-10.33,0-18.7,8.37-18.7,18.7s8.37,18.7,18.7,18.7s18.7-8.37,18.7-18.7C850.97,83.62,842.61,75.26,832.3,75.23z"/></g></svg>
+    <div class="brand"><svg class="wlogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 138 65" role="img" aria-label="Woods &amp; Co.">
+<path d="M73.4 34.1C65.6 34.1 60.6 39.4 60.6 47.5C60.6 55.7 65.6 61.0 73.4 61.0C81.2 61.0 86.2 55.8 86.2 47.5C86.2 39.3 81.2 34.1 73.4 34.1ZM79.2 47.5C79.2 49.8 78.7 55.1 73.4 55.1C68.1 55.1 67.6 50.4 67.6 47.5C67.6 45.3 68.1 40.0 73.4 40.0C78.7 40.0 79.2 45.3 79.2 47.5Z"/>
+<path d="M27.8 49.9L27.9 49.3L22.6 46.8L22.4 47.9C22.4 48.5 22.3 49.2 22.1 49.8L19.9 47.2C22.3 45.7 24.3 43.9 24.3 40.7C24.3 37.6 22.0 34.3 17.0 34.3C12.0 34.3 9.6 37.7 9.6 40.9C9.6 42.5 10.2 44.1 11.2 45.4C9.8 46.0 8.6 47.1 7.7 48.4C6.8 49.8 6.4 51.3 6.3 52.9C6.3 58.1 9.9 61.1 16.0 61.1C18.3 61.2 20.6 60.6 22.5 59.3L23.8 60.7H31.6L26.2 54.7C27.1 53.2 27.6 51.6 27.8 49.9ZM18.9 54.9C18.0 55.5 17.0 55.8 16.0 55.8C15.6 55.8 15.1 55.8 14.7 55.6C14.4 55.5 14.0 55.3 13.7 55.0C13.4 54.7 13.2 54.4 13.0 54.0C12.9 53.6 12.8 53.2 12.8 52.8C12.8 52.2 13.0 51.6 13.3 51.0C13.6 50.5 14.0 50.1 14.5 49.8L18.9 54.9ZM15.5 40.7C15.5 39.7 16.0 39.3 16.9 39.3C17.3 39.3 18.2 39.3 18.2 40.7C18.2 41.8 17.6 42.3 16.5 42.9C15.9 42.3 15.5 41.6 15.5 40.7L15.5 40.7Z"/>
+<path d="M51.2 51.5C51.0 52.6 50.4 53.5 49.6 54.2C48.7 54.8 47.7 55.2 46.6 55.1C41.3 55.1 40.7 49.8 40.7 47.5C40.7 42.8 42.9 40.0 46.4 40.0C47.5 39.9 48.6 40.2 49.4 40.9C50.3 41.6 50.9 42.6 51.0 43.7L51.3 44.4L58.0 42.2L57.8 41.4C56.1 36.5 52.2 34.0 46.6 34.0C38.7 34.1 33.8 39.3 33.8 47.5C33.8 55.8 38.7 61.0 46.6 61.0C52.1 61.0 56.1 58.4 57.8 53.8L58.1 53.1L51.5 50.8L51.2 51.5Z"/>
+<path d="M14.0 30.2L14.2 29.6C14.7 27.8 15.1 26.0 15.5 24.2L16.6 19.8C16.8 18.6 17.1 17.5 17.3 16.4L18.2 20.4L18.8 23.1C19.3 25.1 19.8 27.2 20.2 29.5L20.4 30.2H27.8L34.5 4.1H27.8L27.7 4.7C27.4 5.7 27.2 6.6 27.0 7.5C26.7 9.1 26.3 10.6 25.9 12.1V12.5C25.4 14.9 24.7 17.4 24.3 19.6C23.8 17.6 23.2 15.3 22.7 13.1L22.5 12.1C22.1 10.5 21.7 9.1 21.4 7.5C21.2 6.6 21.0 5.7 20.7 4.7L20.5 4.1H14.2L14.1 4.7C13.9 5.6 13.7 6.4 13.5 7.3C13.1 8.9 12.7 10.5 12.4 12.1L12.1 13.2C11.5 15.5 11.0 17.8 10.5 19.7C10.1 17.5 9.4 14.7 8.9 12.1C8.6 10.6 8.2 9.0 7.7 7.3C7.5 6.4 7.3 5.6 7.1 4.7L7.0 4.1H0L6.7 30.2H14.0Z"/>
+<path d="M128.8 14.1C124.4 13.2 123.6 12.6 123.6 11.4C123.6 9.8 125.6 9.5 126.7 9.5C127.2 9.4 127.6 9.4 128.1 9.5C128.5 9.7 128.9 9.9 129.3 10.1C129.6 10.4 129.9 10.8 130.1 11.2C130.3 11.5 130.5 12.0 130.5 12.4L130.7 13.3L137.6 11.8L137.5 11.1C136.7 6.6 132.6 3.8 126.9 3.8C120.5 3.8 116.6 6.8 116.6 11.8C116.6 17.5 121.4 19.1 126.5 20.0C130.7 20.7 131.0 21.6 131.0 22.6C131.0 24.7 128.4 24.9 127.2 24.9C124.7 24.9 123.3 23.7 123.1 21.6V20.7L116.2 21.7V22.4C116.3 26.5 120.2 30.6 127.2 30.6C133.6 30.6 138 27.3 138 22.3C138 17.6 135.2 15.1 128.8 14.1Z"/>
+<path d="M75.9 3.8C74.3 3.7 72.6 3.9 71.1 4.5C69.5 5.1 68.1 5.9 66.9 7.1C65.6 8.4 64.6 10.0 64.0 11.7C63.3 13.5 63.1 15.3 63.2 17.2C63.2 25.4 68.2 30.6 75.9 30.6C83.7 30.6 88.7 25.4 88.7 17.2C88.7 9.1 83.7 3.8 75.9 3.8ZM75.9 24.8C70.7 24.8 70.1 19.5 70.1 17.2C70.1 14.9 70.7 9.6 75.9 9.6C81.2 9.6 81.8 14.9 81.8 17.2C81.8 19.5 81.2 24.8 75.9 24.8H75.9Z"/>
+<path d="M47.5 3.8C45.9 3.7 44.2 3.9 42.7 4.5C41.2 5.1 39.7 5.9 38.5 7.1C37.3 8.4 36.3 10.0 35.6 11.8C35.0 13.5 34.7 15.3 34.7 17.2C34.7 25.4 39.8 30.6 47.5 30.6C55.3 30.6 60.3 25.4 60.3 17.2C60.3 9.1 55.3 3.8 47.5 3.8ZM53.5 17.2C53.5 19.5 53.0 24.8 47.7 24.8C42.4 24.8 41.8 19.4 41.8 17.2C41.8 15.0 42.4 9.6 47.7 9.6C53.0 9.6 53.5 14.9 53.5 17.2Z"/>
+<path d="M101.5 4.2H91.6V30.2H101.5C109.6 30.2 114.4 25.3 114.4 17.2C114.4 9.1 109.6 4.2 101.5 4.2ZM107.3 17.2C107.3 21.9 105.3 24.3 101.3 24.3H98.3V10.1H101.3C105.3 10.1 107.3 12.5 107.3 17.2Z"/>
+</svg><div class="hd-meta"><b id="mName"></b>
+      <span>Live dashboard · refreshed on demand</span><br>
+      <span id="mBasis"></span></div></div>
+  </div>
+  <h1 id="mTitle">Billings against cost, live</h1>
+  <p class="lede" id="mLede"></p>
+  <div class="perbar">
+    <div class="pseg" id="seg" role="group" aria-label="Reporting period"></div>
+  </div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+</div></header>
+
+<main><div class="wrap" id="content"><div class="loading">Reading the sales sheet and payroll…</div></div></main>
+
+<footer><div class="wrap">
+  <svg class="logo" role="img" aria-label="The Co." viewBox="0 0 851 112.22" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0 -0.418)"><path d="M74.81,0.42H4.68C2.13,0.49,0.08,2.54,0,5.09v18.7c0,2.47,2.2,0,4.68,0h18.7v84.16c0.13,2.53,2.15,4.54,4.68,4.68h18.7c2.53-0.13,4.55-2.15,4.68-4.68V23.8h23.38c2.47,0,4.68,2.47,4.68,0V5.09C79.41,2.54,77.36,0.49,74.81,0.42z"/><path d="M229.12,0.42h-18.7c-2.55,0.08-4.6,2.13-4.68,4.68V42.5h-42.08V5.09c-0.08-2.55-2.13-4.6-4.68-4.68h-18.7c-2.53,0.13-4.55,2.15-4.68,4.68v102.87c0.13,2.53,2.15,4.55,4.68,4.68h18.7c2.55-0.08,4.6-2.13,4.68-4.68V70.56h42.08v37.41c0.08,2.55,2.13,4.6,4.68,4.68h18.7c2.53-0.13,4.54-2.15,4.68-4.68V5.09C233.66,2.57,231.64,0.55,229.12,0.42z"/><path d="M369.39,23.8c2.47,0,4.68,2.47,4.68,0V5.09c-0.08-2.55-2.13-4.6-4.68-4.68h-65.46c-2.55,0.08-4.6,2.13-4.68,4.68v102.87c0.08,2.55,2.13,4.6,4.68,4.68h65.46c2.55-0.08,4.6-2.13,4.68-4.68v-18.7c-0.08-2.55-2.13-4.6-4.68-4.68h-42.08V70.56h37.41c2.55-0.08,4.6-2.13,4.68-4.68v-18.7c-0.13-2.52-2.15-4.54-4.68-4.68h-37.41V23.8H369.39z"/><path d="M593.83,79.91c-1.45-1.7-2.89-1.53-4.68,0c-5.21,4.48-16.04,4.68-23.38,4.68c-14.67,0.82-27.23-10.4-28.05-25.07c-0.06-0.99-0.06-1.99,0-2.98c0-17.27,11.67-32.73,28.05-32.73c8.57,0.63,16.74,3.9,23.38,9.35c0.81,0.82-1.14,0,0,0l0,0c1.14,0,3.84,0.84,4.68,0l14.03-14.03c0.94-0.94,0.04-3.45,0-4.68c-0.04-1.23,0.97,0.87,0,0c-11.76-9.8-26.79-14.81-42.08-14.03c-30.26-0.72-55.39,23.22-56.11,53.49c-0.02,0.87-0.02,1.75,0,2.62c-0.67,30.32,23.38,55.44,53.7,56.11c0.8,0.02,1.61,0.02,2.41,0c15.07,0,31.53-3.78,42.08-14.03c1.29-0.86,1.64-2.6,0.79-3.89c-0.21-0.31-0.47-0.58-0.79-0.79L593.83,79.91z"/><path d="M715.4,0.42c-30.32-0.67-55.44,23.38-56.11,53.7c-0.02,0.8-0.02,1.61,0,2.41c0,30.99,25.12,56.11,56.11,56.11c30.99,0,56.11-25.12,56.11-56.11c0.7-30.29-23.29-55.41-53.58-56.11C717.09,0.4,716.24,0.4,715.4,0.42z M715.4,28.47c14.82-0.68,27.38,10.79,28.05,25.61c0.04,0.82,0.04,1.63,0,2.45c0,15.49-12.56,28.05-28.05,28.05s-28.05-12.56-28.05-28.05c-0.65-14.84,10.86-27.41,25.7-28.05C713.83,28.44,714.62,28.44,715.4,28.47z"/><path d="M832.3,75.23c-10.33,0-18.7,8.37-18.7,18.7s8.37,18.7,18.7,18.7s18.7-8.37,18.7-18.7C850.97,83.62,842.61,75.26,832.3,75.23z"/></g></svg>
+  <div><b>The Co. Accountants &amp; Business Advisors</b> · Suite 1 / Level 10, 45 William St, Melbourne VIC 3000 · +61 3 8488 9800</div>
+</div></footer>
+
+<script>
+(()=>{'use strict';
+let DATA=null, ENT='R', PER='CUR', TAB='sum';
+let XON=true; try{ XON=localStorage.getItem('woodsXero')!=='off'; }catch(e){}
+
+/* ---------- formatting ---------- */
+const F=n=>(n<0?'-':'')+'$'+Math.abs(Math.round(n||0)).toLocaleString('en-AU');
+const F2=n=>(n<0?'-':'')+'$'+Math.abs(n||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const X=n=>(n||0).toFixed(2)+'×';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const title=s=>String(s||'').toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
+
+/* ---------- period ---------- */
+function perMonths(){
+  const ms=DATA.months, cur=DATA.current.key;
+  if(PER==='YTD') return ms.map(m=>m.key);
+  if(PER==='QTD'){ const q=ms.find(m=>m.key===cur).q; return ms.filter(m=>m.q===q).map(m=>m.key); }
+  if(PER==='CUR') return [cur];
+  return [PER];
+}
+function perName(){
+  const ms=DATA.months, k=perMonths();
+  const lab=kk=>ms.find(m=>m.key===kk).label;
+  if(PER==='YTD') return DATA.fy+' year to date';
+  if(PER==='QTD') return 'Quarter to date ('+lab(k[0])+(k.length>1?' to '+lab(k[k.length-1]):'')+')';
+  return lab(k[0])+(k[0]===DATA.current.key?' to date':'');
+}
+const hasEst=()=>perMonths().includes(DATA.current.key);
+
+/* ---------- aggregation ---------- */
+const M=()=>{const m=DATA.mult;return ENT==='R'?{be:m.R_BREAKEVEN,tg:m.R_TARGET}:{be:m.S_BREAKEVEN,tg:m.S_TARGET}};
+const goal=()=>M().tg>M().be+1e-9;
+const deptsOf=e=>DATA.depts.filter(d=>d.ent===e);
+const dep=n=>DATA.depts.find(d=>d.name===n);
+function agg(e){
+  const o={g:0,s:0,pt:0,wc:0,c:0,b:0,est:false,paid:0};
+  perMonths().forEach(k=>{const c=e.cost[k]; if(c){o.g+=c.g;o.s+=c.s;o.pt+=c.pt;o.wc+=c.wc;o.c+=c.c;o.paid+=c.paid||0;if(c.b==='E')o.est=true;}
+    o.b+=e.bill[k]||0;});
+  const mm=M(); o.bev=o.c*mm.be; o.tgt=o.c*mm.tg; o.gap=o.b-o.tgt; o.mult=o.c?o.b/o.c:0; return o;
+}
+function members(dn){
+  return DATA.emps.filter(e=>e.dept===dn).map(e=>Object.assign({},e,{a:agg(e)}))
+    .filter(e=>e.a.c>0||e.a.b>0);
+}
+function teamBill(dn){const t=DATA.team[dn]||{};return perMonths().reduce((s,k)=>s+(t[k]||0),0);}
+function deptAgg(dn){
+  const mem=members(dn), mm=M();
+  const o={c:0,b:0,g:0,s:0,pt:0,wc:0,heads:0,billed:0,est:false};
+  mem.forEach(e=>{o.c+=e.a.c;o.b+=e.a.b;o.g+=e.a.g;o.s+=e.a.s;o.pt+=e.a.pt;o.wc+=e.a.wc;if(e.a.c>0)o.heads++;if(e.a.b>0)o.billed++;if(e.a.est)o.est=true;});
+  o.team=teamBill(dn); o.b+=o.team;
+  o.bev=o.c*mm.be; o.tgt=o.c*mm.tg; o.gap=o.b-o.tgt; o.mult=o.c?o.b/o.c:0; o.mem=mem; return o;
+}
+function entAgg(){
+  const fee=deptsOf(ENT).filter(d=>d.fee), non=deptsOf(ENT).filter(d=>!d.fee);
+  const o={c:0,b:0,tgt:0,bev:0,heads:0,billed:0,clears:0,nonC:0};
+  fee.forEach(d=>{const a=deptAgg(d.name);o.c+=a.c;o.b+=a.b;o.heads+=a.heads;o.billed+=a.billed;
+    a.mem.forEach(e=>{if(e.a.c>0&&e.a.gap>=0)o.clears++;});});
+  non.forEach(d=>{o.nonC+=deptAgg(d.name).c;});
+  const mm=M(); o.bev=o.c*mm.be; o.tgt=o.c*mm.tg; o.gap=o.b-o.tgt; o.mult=o.c?o.b/o.c:0; return o;
+}
+const mvc=m=>m>=M().tg?'ok':m>=M().be?'mid':'bad';
+
+/* ---------- tooltips ---------- */
+const TIPS=[];
+const TIP=h=>{TIPS.push(h);return ` data-tip="${TIPS.length-1}"`;};
+const r2=(a,b,c)=>`<tr class="${c||''}"><td>${a}</td><td>${b}</td></tr>`;
+function empTip(e){
+  const a=e.a, mm=M();
+  let t=`<div class="th">${esc(e.name)}</div><div class="ts">${esc(e.role||e.type||'')}${e.salesName?' · sheet "'+esc(e.salesName)+'"':''}${e.alloc<1?' · '+Math.round(e.alloc*100)+'% allocated':''}</div><table>`;
+  t+=r2('Gross wages and allowances',F2(a.g))+r2('Superannuation',F2(a.s))+r2('Payroll tax',F2(a.pt))+r2('WorkCover',F2(a.wc))+r2('Cost of employment',F2(a.c),'s');
+  if(a.est) t+=r2('Current month','estimated to day '+DATA.current.day+' of '+DATA.current.days);
+  if(a.paid && a.est) t+=r2('FoundU paid so far this month',F2(a.paid));
+  t+=r2('Billings (GP)',F(a.b),'g');
+  if(a.c){ t+=r2('Break-even ×'+mm.be.toFixed(2),F(a.bev),'g'); if(goal()) t+=r2('Target ×'+mm.tg.toFixed(2),F(a.tgt));
+    t+=r2(a.gap>=0?'Ahead by':'Short by',`<span class="${a.gap>=0?'up':'dn'}">${F(Math.abs(a.gap))}</span>`,'s')+r2('Billings per $1 of cost','×'+a.mult.toFixed(2)); }
+  return t+'</table>';
+}
+let tipEl=null;
+function bindTips(){
+  if(!tipEl){tipEl=document.createElement('div');tipEl.className='tip';document.body.appendChild(tipEl);}
+  const show=el=>{const h=TIPS[+el.dataset.tip]; if(h==null) return; tipEl.innerHTML=h;tipEl.style.display='block';
+    const r=el.getBoundingClientRect(),t=tipEl.getBoundingClientRect();
+    let x=r.left+r.width/2-t.width/2,y=r.top-t.height-10; if(y<8)y=r.bottom+10;
+    x=Math.max(8,Math.min(x,window.innerWidth-t.width-8)); tipEl.style.left=x+'px';tipEl.style.top=y+'px';};
+  const hide=()=>{tipEl.style.display='none';};
+  document.querySelectorAll('[data-tip]').forEach(el=>{ if(el.dataset.tb)return; el.dataset.tb='1';
+    if(!el.hasAttribute('tabindex'))el.tabIndex=0;
+    el.addEventListener('mouseenter',()=>show(el)); el.addEventListener('mouseleave',hide);
+    el.addEventListener('focus',()=>show(el)); el.addEventListener('blur',hide); });
+}
+
+/* team line: carries the department's cost when nobody is billed individually */
+function teamRowFor(d,a){
+  if(!a.team) return null; const mm=M(), c=a.billed?0:a.c;
+  return {name:d.label+' team',role:a.billed?'Sales sheet line not split by person':'Sales sheet bills as a team; cost is the whole department',team:true,
+    a:{c:c,b:a.team,bev:c*mm.be,tgt:c*mm.tg,gap:a.team-c*mm.tg,mult:c?a.team/c:0}};
+}
+/* ---------- bars ---------- */
+function bars(rows,teamRow){
+  const mm=M(), two=goal();
+  const all=rows.slice(); if(teamRow) all.unshift(teamRow);
+  const mx=Math.max(...all.map(r=>Math.max(r.a.b,r.a.tgt*1.05)),1);
+  return `<div class="beb"><div class="lg"><span><i class="c"></i>Cost of employment</span>
+     <span><i class="g"></i>Billings above cost</span><span><i class="r"></i>Billings short of cost</span>
+     ${two?`<span><i class="bb"></i>Break-even ${mm.be.toFixed(2)}×</span><span><i class="b"></i>Target ${mm.tg.toFixed(2)}×</span>`
+          :`<span><i class="b"></i>Break-even ${mm.be.toFixed(2)}×</span>`}</div>
+   ${all.map(r=>{const a=r.a,c=a.c,b=a.b,cw=c/mx*100,bw=b/mx*100,bev=a.bev/mx*100,tg=a.tgt/mx*100;
+     const seg=b>=c?`<div class="seg cost" style="left:0;width:${cw}%"></div><div class="seg gain" style="left:${cw}%;width:${Math.max(bw-cw,0)}%"></div>`
+                   :`<div class="seg cost" style="left:0;width:${bw}%"></div><div class="seg short" style="left:${bw}%;width:${Math.max(cw-bw,0)}%"></div>`;
+     return `<div class="row"${r.team?'':TIP(empTip(r))}>
+       <div class="who"><div class="nm">${esc(r.name)}${a.est?'<span class="est">est.</span>':''}</div><div class="rl">${esc(r.role||'')}</div></div>
+       <div class="track"><div class="base"></div>${seg}
+         ${c?`${two?`<div class="bevm" style="left:${Math.min(bev,99.5)}%"></div>`:''}<div class="bench" style="left:${Math.min(tg,99.4)}%"><b>${F(a.tgt)}</b></div>`:''}</div>
+       <div class="amt">${F(b)}<small>cost ${F(c)}</small></div>
+       <div class="mx ${c?mvc(a.mult):'zero'}">${c?X(a.mult):'—'}<small>${!c?(r.team?'team line':'no payroll'):(a.gap>=0?'+'+F(a.gap):F(a.gap))}</small></div>
+     </div>`}).join('')}</div>`;
+}
+
+/* ---------- summary ---------- */
+function monthTable(){
+  const mm=M(), fee=deptsOf(ENT).filter(d=>d.fee);
+  const save=PER; const rows=DATA.months.map(m=>{PER=m.key;const a=entAgg();return {m,a};}); PER=save;
+  const T=rows.reduce((s,r)=>({b:s.b+r.a.b,c:s.c+r.a.c}),{b:0,c:0});
+  return `<div class="tbl"><table><thead><tr><th>Month</th><th>Billings (GP)</th><th>Fee-team cost</th><th>Break-even</th>
+    ${goal()?'<th>Target</th>':''}<th>Gap to ${goal()?'target':'break-even'}</th><th>Multiple</th><th>Cost basis</th></tr></thead><tbody>
+    ${rows.map(({m,a})=>{const ref=goal()?a.tgt:a.bev, gp=a.b-ref;return `<tr><td>${m.label}</td><td>${F(a.b)}</td><td>${F(a.c)}</td><td class="mut">${F(a.bev)}</td>
+      ${goal()?`<td>${F(a.tgt)}</td>`:''}<td class="${gp>=0?'pos':'neg'}">${gp>=0?'+'+F(gp):F(gp)}</td>
+      <td class="${mvc(a.mult)}" style="font-weight:700">${X(a.mult)}</td>
+      <td class="tx mut">${m.key===DATA.current.key?'Estimate to day '+DATA.current.day:'FoundU actual'}</td></tr>`}).join('')}
+    <tr class="tot"><td>${DATA.fy} to date</td><td>${F(T.b)}</td><td>${F(T.c)}</td><td>${F(T.c*mm.be)}</td>${goal()?`<td>${F(T.c*mm.tg)}</td>`:''}
+      <td class="${T.b-(goal()?T.c*mm.tg:T.c*mm.be)>=0?'pos':'neg'}">${F(T.b-(goal()?T.c*mm.tg:T.c*mm.be))}</td><td>${X(T.c?T.b/T.c:0)}</td><td></td></tr>
+  </tbody></table></div>`;
+}
+function scorecard(){
+  const fee=deptsOf(ENT).filter(d=>d.fee), non=deptsOf(ENT).filter(d=>!d.fee), t=entAgg();
+  const rows=fee.map(d=>({d,a:deptAgg(d.name)})).filter(x=>x.a.c||x.a.b).sort((x,y)=>y.a.gap-x.a.gap);
+  return `<div class="tbl"><table><thead><tr><th>Department</th><th>Billings (GP)</th><th>Cost</th><th>Break-even</th>${goal()?'<th>Target</th>':''}
+    <th>Gap</th><th>Multiple</th><th>Heads</th><th>Billed</th></tr></thead><tbody>
+    ${rows.map(({d,a})=>`<tr><td><b style="color:var(--ink)">${d.label}</b>${a.est?'<span class="est">est.</span>':''}</td><td>${F(a.b)}</td><td>${F(a.c)}</td>
+      <td class="mut">${F(a.bev)}</td>${goal()?`<td>${F(a.tgt)}</td>`:''}
+      <td class="${(goal()?a.gap:a.b-a.bev)>=0?'pos':'neg'}">${F(goal()?a.gap:a.b-a.bev)}</td>
+      <td class="${mvc(a.mult)}" style="font-weight:700">${X(a.mult)}</td><td>${a.heads}</td><td>${a.billed}${a.team?' + team':''}</td></tr>`).join('')}
+    <tr class="tot"><td>Fee departments</td><td>${F(t.b)}</td><td>${F(t.c)}</td><td class="mut">${F(t.bev)}</td>${goal()?`<td>${F(t.tgt)}</td>`:''}
+      <td class="${(goal()?t.gap:t.b-t.bev)>=0?'pos':'neg'}">${F(goal()?t.gap:t.b-t.bev)}</td><td class="${mvc(t.mult)}">${X(t.mult)}</td><td>${t.heads}</td><td>${t.billed}</td></tr>
+    ${non.map(d=>{const a=deptAgg(d.name);return a.c?`<tr class="sub"><td>${d.label}: no billing target, recovered through the multiple</td><td class="mut">—</td><td>${F(a.c)}</td>
+      <td colspan="${goal()?6:5}" class="tx mut">Inside the operating cost base the multiple covers</td></tr>`:''}).join('')}
+  </tbody></table></div>`;
+}
+function quarterTable(){
+  const ms=DATA.months, qk=ms.find(m=>m.key===(PER==='YTD'||PER==='QTD'||PER==='CUR'?DATA.current.key:PER)).q;
+  const qm=ms.filter(m=>m.q===qk).map(m=>m.key);
+  const rows=[];
+  deptsOf(ENT).filter(d=>d.fee).forEach(d=>DATA.emps.filter(e=>e.dept===d.name&&e.qtr&&e.qtr[qk]).forEach(e=>{
+    const q=e.qtr[qk], qtd=qm.reduce((s,k)=>s+(e.bill[k]||0),0); rows.push({e,d,q,qtd});}));
+  if(!rows.length) return `<div class="flag"><div><div class="ft">No quarterly targets recorded for this entity</div>
+    <div class="fd">The sales sheet has no per-person quarter lines for ${esc(DATA.ents[ENT].name)}.</div></div></div>`;
+  rows.sort((a,b)=>b.qtd-a.qtd);
+  const T=rows.reduce((s,r)=>({t:s.t+(r.q.target||0),b:s.b+r.qtd,c:s.c+(r.q.comm||0)}),{t:0,b:0,c:0});
+  return `<p class="note">Quarter ${esc(qk)}. Targets by role and commission come from the sales sheet: ${Object.keys(DATA.roleTargets).map(k=>title(k)+' '+F(DATA.roleTargets[k])).join(', ')} a quarter.
+    ${qm.filter(k=>k<=DATA.current.key).length} of 3 months have started. Commission is indicative and not in cost.</p>
+    <div class="tbl"><table><thead><tr><th>Person</th><th>Role per sheet</th><th>Q target</th><th>Quarter to date</th><th>% of target</th><th>Still to bill</th><th>Commission (sheet)</th></tr></thead><tbody>
+    ${rows.map(r=>{const p=r.q.target?r.qtd/r.q.target*100:null;return `<tr><td><b style="color:var(--ink)">${esc(r.e.name)}</b><br><span class="mut" style="font-size:12px">${r.d.label}</span></td>
+      <td class="tx mut">${esc(r.q.role)}</td><td>${r.q.target?F(r.q.target):'<span class="mut">none</span>'}</td><td style="font-weight:700">${F(r.qtd)}</td>
+      <td class="${p===null?'mut':p>=100?'pos':'neg'}">${p===null?'—':p.toFixed(0)+'%'}</td>
+      <td class="${!r.q.target?'mut':r.q.target-r.qtd>0?'neg':'pos'}">${!r.q.target?'—':(r.q.target-r.qtd>0?F(r.q.target-r.qtd):'+'+F(r.qtd-r.q.target))}</td>
+      <td class="${r.q.comm>0?'pos':'mut'}">${r.q.noComm?'<span class="mut">no comms</span>':r.q.comm>0?F(r.q.comm):'—'}</td></tr>`}).join('')}
+    <tr class="tot"><td>Total</td><td></td><td>${F(T.t)}</td><td>${F(T.b)}</td><td>${T.t?(T.b/T.t*100).toFixed(0)+'%':'—'}</td><td>${F(Math.max(T.t-T.b,0))}</td><td>${F(T.c)}</td></tr>
+    </tbody></table></div>`;
+}
+function summary(){
+  const t=entAgg(), mm=M(), c=DATA.current;
+  const fee=deptsOf(ENT).filter(d=>d.fee);
+  const rows=[]; let teamRows=[];
+  fee.forEach(d=>{const a=deptAgg(d.name); a.mem.forEach(e=>{if(e.a.c>0||e.a.b>0) rows.push(e);});
+    const tr=teamRowFor(d,a); if(tr) teamRows.push(tr);});
+  rows.sort((a,b)=>b.a.b-a.a.b);
+  const ref=goal()?t.tgt:t.bev, gp=t.b-ref;
+  return `<div class="kpis">
+    <div class="kpi"><div class="lab">Billings (GP)</div><div class="val">${F(t.b)}</div><div class="sub">Sales sheet, fee departments.</div></div>
+    <div class="kpi"><div class="lab">Fee-team cost</div><div class="val">${F(t.c)}</div>
+      <div class="sub">${t.heads} people, fully loaded.${hasEst()?' Current month estimated to day '+c.day+'.':''}</div></div>
+    <div class="kpi"><div class="lab">${goal()?'Target billings':'Break-even billings'}</div><div class="val">${F(ref)}</div>
+      <div class="chip ${gp>=0?'up':'dn'}">${gp>=0?F(gp)+' ahead':F(-gp)+' behind'}</div>
+      <div class="sub">Cost × ${(goal()?mm.tg:mm.be).toFixed(2)}.${goal()?' Break-even '+F(t.bev)+'.':''}</div></div>
+    <div class="kpi"><div class="lab">Billings per $1 of cost</div><div class="val ${t.mult>=mm.tg?'pos':t.mult>=mm.be?'amb':'neg'}">${X(t.mult)}</div>
+      <div class="sub">Break-even ${mm.be.toFixed(2)}×${goal()?', target '+mm.tg.toFixed(2)+'×':''}.</div></div>
+    ${t.billed===0&&t.b>0?`<div class="kpi"><div class="lab">How billings are recorded</div><div class="val" style="font-size:22px">As a team</div>
+      <div class="sub">The sales sheet has one line for the whole team, so there is no per-person split.</div></div>`
+    :`<div class="kpi"><div class="lab">At or above ${goal()?'target':'break-even'}</div><div class="val">${t.clears} <span class="mut" style="font-size:18px">of ${t.heads}</span></div>
+      <div class="sub">${t.billed} billed at all.</div></div>`}
+  </div>
+  ${hasEst()?`<div class="flag"><div><div class="ft">${esc(DATA.months.find(m=>m.key===c.key).label)} is in progress</div>
+    <div class="fd">Cost is estimated for ${c.day} of ${c.days} days from salaries. Billings are whatever the sales sheet holds today, so the month will look short of target until placements are entered.</div></div></div>`:''}
+  ${PER==='CUR'?trackSection(fee):''}
+  <section class="blk"><div class="hd"><h2>Every fee earner, ${esc(perName())}</h2><div class="rt">Sorted by billings</div></div>
+    <p class="note">Each person's billings against their fully loaded cost. Everyone carries the same multiple: break-even is cost × ${mm.be.toFixed(2)}${goal()?' and target is cost × '+mm.tg.toFixed(2):''}, per the ${esc(DATA.mult.BASIS)}. Hover a row for the cost build.</p>
+    ${teamRows.map(tr=>`<div style="margin-bottom:12px">${bars([],tr)}</div>`).join('')}${bars(rows)}
+  </section>
+  <section class="blk"><div class="hd"><h2>Department scorecard</h2><div class="rt">${esc(perName())}</div></div>${scorecard()}</section>
+  ${xeroSection()}
+  <section class="blk"><div class="hd"><h2>Month by month</h2><div class="rt">${DATA.fy}</div></div>${monthTable()}</section>
+  <section class="blk"><div class="hd"><h2>Quarterly targets and commission</h2><div class="rt">Per the sales sheet</div></div>${quarterTable()}</section>`;
+}
+
+/* ---------- on track for the month ---------- */
+function monthCost(e,k){const x=e.cost[k]; if(!x) return 0; return x.m!=null?x.m:(x.b==='E'&&DATA.current.fraction?x.c/DATA.current.fraction:x.c);}
+function trackSection(depts){
+  const c=DATA.current, k=c.key, fw=c.fullWeeks||0, mo=DATA.months.find(m=>m.key===k);
+  const mm=M(), mult=goal()?mm.tg:mm.be, word=goal()?'target':'break-even';
+  const mName=mo.label.split(' ')[0];
+  if(!fw) return `<section class="blk"><div class="hd"><h2>On track for ${esc(mo.label)}?</h2></div>
+    <div class="flag"><div><div class="ft">No full week has passed yet</div><div class="fd">Weekly pace starts from 8 ${esc(mName)}, once 1 to 7 ${esc(mName)} is complete.</div></div></div></section>`;
+  const share=fw*7/c.days, remDays=c.days-fw*7, remW=remDays/7;
+  const st=(b,t,be,team)=>{ if(team) return '<span class="st na">Billed as a team</span>'; if(!t) return '<span class="st na">No cost</span>';
+    if(b>=t*share) return '<span class="st ok">On track</span>';
+    if(goal()&&b>=be*share) return '<span class="st mid">Above break-even pace</span>';
+    return '<span class="st bad">Behind</span>'; };
+  const line=(lab,sub,t,b,be,cls,team)=>{const exp=t*share, gap=b-exp, still=Math.max(t-b,0);
+    return `<tr class="${cls||''}"><td>${lab}${sub?`<br><span class="mut" style="font-size:12px">${sub}</span>`:''}</td>
+      <td>${F(t)}</td><td class="mut">${F(exp)}</td><td>${team?'<span class="mut">team</span>':F(b)}</td>
+      <td class="${team?'mut':gap>=0?'pos':'neg'}">${team?'—':(gap>=0?'+'+F(gap):F(gap))}</td>
+      <td style="text-align:left">${st(b,t,be,team)}</td>
+      <td>${team?'—':still?F(still):'<span class="pos">Met</span>'}</td>
+      <td class="mut">${team||!still||!remW?'—':F(still/remW)}</td></tr>`;};
+  let body='', T={t:0,b:0,be:0};
+  depts.forEach(d=>{
+    const rows=DATA.emps.filter(e=>e.dept===d.name).map(e=>({e,mc:monthCost(e,k),b:e.bill[k]||0})).filter(r=>r.mc>0||r.b>0)
+      .sort((x,y)=>(y.b/(y.mc||1))-(x.b/(x.mc||1)));
+    const team=(DATA.team[d.name]||{})[k]||0, asTeam=team>0&&rows.every(r=>!r.b);
+    const D={t:0,b:team,be:0};
+    rows.forEach(r=>{const t=r.mc*mult, be=r.mc*mm.be; D.t+=t; D.b+=r.b; D.be+=be;
+      body+=line(`<b style="color:var(--ink)">${esc(r.e.name)}</b>`, esc(r.e.role||''), t, r.b, be, '', asTeam);});
+    if(team&&!asTeam) body+=`<tr class="sub"><td>Team line in the sales sheet</td><td></td><td></td><td>${F(team)}</td><td colspan="4"></td></tr>`;
+    if(depts.length>1||team) body+=line(esc(d.label)+' total','',D.t,D.b,D.be,'sub',false);
+    T.t+=D.t; T.b+=D.b; T.be+=D.be;
+  });
+  if(depts.length>1) body+=line(esc(DATA.ents[ENT].short)+' fee departments','',T.t,T.b,T.be,'tot',false);
+  return `<section class="blk"><div class="hd"><h2>On track for ${esc(mo.label)}?</h2>
+    <div class="rt">${fw} of ${(c.days/7).toFixed(1)} weeks gone · 1 to ${fw*7} ${esc(mName)}</div></div>
+    <p class="note">Each person's monthly ${word} is their full-month cost × ${mult.toFixed(2)}. After ${fw} full week${fw>1?'s':''}
+      (${Math.round(share*100)}% of the month) they are on track if billings to date are at least ${Math.round(share*100)}% of that.
+      Billings include anything entered for the week in progress. The last column is what is still needed each week for the
+      remaining ${remDays} days.${goal()?' Above break-even pace means covering cost, but not yet the profit target.':''}</p>
+    <div class="tbl"><table><thead><tr><th>Name</th><th>Monthly ${word}</th><th>Expected by now</th><th>Billed</th><th>Ahead / behind</th>
+      <th style="text-align:left">Status</th><th>Still to bill</th><th>Per week left</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+}
+
+/* ---------- Xero ---------- */
+function billFor(keys){
+  return deptsOf(ENT).filter(d=>d.fee).reduce((s,d)=>{
+    const t=DATA.team[d.name]||{};
+    return s+DATA.emps.filter(e=>e.dept===d.name).reduce((a,e)=>a+keys.reduce((b,k)=>b+(e.bill[k]||0),0),0)
+      +keys.reduce((b,k)=>b+(t[k]||0),0);},0);
+}
+function xeroSection(){
+  if(!XON) return '';
+  const XD=DATA.xero, X=XD&&XD[ENT], cur=DATA.current.key;
+  if(!XD||!XD.connected||!X||!Object.keys(X).length) return `<section class="blk"><div class="hd"><h2>Xero profit and loss</h2></div>
+    <div class="flag"><div><div class="ft">No Xero figures yet</div><div class="fd">They appear here once the Xero connection has been authorised and the nightly sync has run.</div></div></div></section>`;
+  const ks=perMonths(), onlyCur=ks.length===1&&ks[0]===cur;
+  const use=ks.filter(k=>X[k]&&(onlyCur||k!==cur)), miss=ks.filter(k=>!X[k]);
+  const lab=k=>DATA.months.find(m=>m.key===k).short;
+  const S=f=>use.reduce((s,k)=>s+(X[k][f]||0),0);
+  const bill=billFor(use);
+  const L=[['Revenue','rev',1,''],['of which permanent fees (Recruitment Fees)','fees',1,'sub'],['Cost of sales','cos',-1,''],['Gross profit','gp',1,''],['Other income','oth',1,''],['Operating expenses','opex',-1,''],['Net profit','np',1,'tot']];
+  const ms=DATA.months.filter(m=>X[m.key]);
+  const closed=ms.filter(m=>m.key!==cur);
+  const hdr=onlyCur?esc(perName())+' (not closed)':(use.length?use.map(lab).join(', ').replace(/, ([^,]*)$/,' and $1'):esc(perName()));
+  return `<section class="blk"><div class="hd"><h2>Xero profit and loss</h2><div class="rt">Unreviewed ledger figures · synced ${esc(XD.syncedAt||'')}</div></div>
+    <p class="note">Straight from Xero for ${esc(DATA.ents[ENT].name)}, before month-end review, so the monthly management report remains the reported result.
+      The month in progress is left out of quarter and year totals because payroll, accruals and month-end journals are not yet posted.
+      Sales sheet billings tie to the permanent fees account; the difference is invoicing timing and placements not in the sheet.${miss.length?' No Xero data for '+miss.map(lab).join(', ')+'.':''}</p>
+    ${onlyCur?`<div class="flag hi"><div><div class="ft">${esc(DATA.months.find(m=>m.key===cur).label)} is not closed in Xero</div><div class="fd">Expect missing wages, super and payroll tax, and reversing accruals, until month-end. Do not read the net profit below as a result.</div></div></div>`:''}
+    <div class="two">
+      <div class="tbl"><table><thead><tr><th>${hdr}</th><th>Xero</th></tr></thead><tbody>
+        ${use.length?L.map(([l,f,sg,cl])=>{const v=S(f)*sg;return `<tr class="${cl}"><td>${l}</td><td class="${v<0?'neg':''}">${F(v)}</td></tr>`}).join('')
+          :'<tr><td colspan="2" class="tx mut">No closed month in this period yet</td></tr>'}
+        ${use.length?`<tr class="sub"><td>Sales sheet billings, fee departments, same months</td><td>${F(bill)}</td></tr>
+        <tr class="sub"><td>Permanent fees less sales sheet billings</td><td class="${S('fees')-bill<0?'neg':''}">${F(S('fees')-bill)}</td></tr>`:''}
+      </tbody></table></div>
+      <div class="tbl cmp"><table><thead><tr><th>Month</th><th>Revenue</th><th>Perm fees</th><th>GP</th><th>Opex</th><th>Net</th></tr></thead><tbody>
+        ${ms.map(m=>{const r=X[m.key],ip=m.key===cur;return `<tr class="${ip?'sub':''}"><td>${m.short}${ip?' <span class="mut">(open)</span>':''}</td><td>${F(r.rev)}</td><td>${F(r.fees)}</td><td>${F(r.gp)}</td><td>${F(-r.opex)}</td><td class="${ip?'':r.np<0?'neg':'pos'}">${F(r.np)}</td></tr>`}).join('')}
+        <tr class="tot"><td>Closed YTD</td><td>${F(closed.reduce((s,m)=>s+X[m.key].rev,0))}</td><td>${F(closed.reduce((s,m)=>s+(X[m.key].fees||0),0))}</td><td>${F(closed.reduce((s,m)=>s+X[m.key].gp,0))}</td><td>${F(-closed.reduce((s,m)=>s+X[m.key].opex,0))}</td><td>${F(closed.reduce((s,m)=>s+X[m.key].np,0))}</td></tr>
+      </tbody></table></div>
+    </div></section>`;
+}
+
+/* ---------- department ---------- */
+function deptPage(dn){
+  const d=dep(dn), a=deptAgg(dn), mm=M();
+  const rows=a.mem.slice().sort((x,y)=>y.a.b-x.a.b);
+  const team=teamRowFor(d,a);
+  const ref=goal()?a.tgt:a.bev;
+  const kp=d.fee?`<div class="kpis">
+    <div class="kpi"><div class="lab">Billings (GP)</div><div class="val">${F(a.b)}</div><div class="sub">${a.billed} of ${a.heads} billed${a.team?', plus the team line':''}.</div></div>
+    <div class="kpi"><div class="lab">Cost</div><div class="val">${F(a.c)}</div><div class="sub">${a.heads} on payroll${a.est?', current month estimated':''}.</div></div>
+    <div class="kpi"><div class="lab">${goal()?'Target':'Break-even'}</div><div class="val">${F(ref)}</div>
+      <div class="chip ${a.b>=ref?'up':'dn'}">${X(a.mult)} achieved</div><div class="sub">${goal()?'Break-even '+F(a.bev)+'.':'No profit goal set.'}</div></div>
+    <div class="kpi"><div class="lab">Gap</div><div class="val ${a.b-ref>=0?'pos':'neg'}">${a.b-ref>=0?'+'+F(a.b-ref):F(a.b-ref)}</div>
+      <div class="sub">${a.b>=ref?'Ahead.':a.b>=a.bev?'Above break-even, short of target.':'Below break-even.'}</div></div></div>`
+   :`<div class="kpis"><div class="kpi"><div class="lab">Cost</div><div class="val">${F(a.c)}</div><div class="sub">${a.heads} people.</div></div>
+    <div class="kpi"><div class="lab">Billing target</div><div class="val">None</div><div class="sub">Recovered through the ${mm.tg.toFixed(2)}× the fee departments carry. A separate target would count this cost twice.</div></div></div>`;
+  return kp+`<section class="blk"><div class="hd"><h2>${esc(d.label)}</h2><div class="rt">${esc(perName())}</div></div>
+    ${d.fee?bars(rows,team):''}</section>
+    ${d.fee&&PER==='CUR'?trackSection([d]):''}
+    <section class="blk"><div class="hd"><h2>Cost build</h2><div class="rt">Hover a row for detail</div></div>
+    <div class="tbl"><table><thead><tr><th>Name</th><th>Gross + allowances</th><th>Super</th><th>Payroll tax</th><th>WorkCover</th><th>Cost</th><th>Loading</th>
+      ${d.fee?`<th>Billings</th><th>Break-even</th>${goal()?'<th>Target</th>':''}<th>Gap</th>`:''}</tr></thead><tbody>
+    ${rows.map(r=>{const x=r.a, gp=goal()?x.gap:x.b-x.bev;return `<tr${TIP(empTip(r))}><td><b style="color:var(--ink)">${esc(r.name)}</b>${x.est?'<span class="est">est.</span>':''}<br><span class="mut" style="font-size:12px">${esc(r.role||r.type||'')}</span></td>
+      <td>${F(x.g)}</td><td>${F(x.s)}</td><td>${F(x.pt)}</td><td>${F(x.wc)}</td><td style="font-weight:700">${F(x.c)}</td>
+      <td class="load">${x.g?'×'+(x.c/x.g).toFixed(2):'—'}</td>
+      ${d.fee?`<td>${x.b?F(x.b):'<span class="mut">nil</span>'}</td><td class="mut">${x.c?F(x.bev):'—'}</td>${goal()?`<td>${x.c?F(x.tgt):'—'}</td>`:''}
+      <td class="${!x.c?'mut':gp>=0?'pos':'neg'}">${!x.c?'—':(gp>=0?'+'+F(gp):F(gp))}</td>`:''}</tr>`}).join('')}
+    ${a.team?`<tr class="sub"><td>Team line in the sales sheet</td><td colspan="6"></td><td>${F(a.team)}</td><td colspan="${goal()?3:2}"></td></tr>`:''}
+    <tr class="tot"><td>${esc(d.label)}</td><td>${F(a.g)}</td><td>${F(a.s)}</td><td>${F(a.pt)}</td><td>${F(a.wc)}</td><td>${F(a.c)}</td><td class="load">${a.g?'×'+(a.c/a.g).toFixed(2):'—'}</td>
+      ${d.fee?`<td>${F(a.b)}</td><td class="mut">${F(a.bev)}</td>${goal()?`<td>${F(a.tgt)}</td>`:''}<td class="${a.b-ref>=0?'pos':'neg'}">${F(a.b-ref)}</td>`:''}</tr>
+    </tbody></table></div></section>`;
+}
+
+/* ---------- checks ---------- */
+function checks(){
+  const w=DATA.warnings||[], x=DATA.excluded||[];
+  const exT=x.reduce((s,r)=>s+r.amt,0);
+  return `<section class="blk"><div class="hd"><h2>Data checks</h2><div class="rt">Refreshed ${esc(DATA.generated)}</div></div>
+    <div class="flag ok"><div><div class="ft">Sources</div><div class="fd">Sales sheet read live. Payroll last synced from FoundU ${esc(DATA.payrollSyncedAt||'unknown')}; latest paid month ${esc(DATA.lastPaidMonth||'none')}.
+      Payroll tax ${(DATA.rates.pt*100).toFixed(3)}% and WorkCover ${(DATA.rates.wc*100).toFixed(3)}% from the data sheet. Multiples: ${esc(DATA.mult.BASIS)}.</div></div></div>
+    ${w.length?w.map(r=>`<div class="flag ${r.lvl==='high'?'hi':''}"><div><div class="ft">${esc(r.t)}</div><div class="fd">${esc(r.d)}</div></div></div>`).join('')
+      :'<div class="flag ok"><div><div class="ft">No exceptions</div><div class="fd">Every sales line matched an employee and every paid employee has a department.</div></div></div>'}
+  </section>
+  <section class="blk"><div class="hd"><h2>Sales lines excluded</h2><div class="rt">${DATA.fy} to date</div></div>
+    <div class="tbl"><table><thead><tr><th>Line</th><th>Department</th><th>Month</th><th>Amount</th><th>Reason</th></tr></thead><tbody>
+    ${x.length?x.map(r=>`<tr><td>${esc(r.name)}</td><td class="tx">${esc(r.dept)}</td><td class="tx">${esc(r.month)}</td><td>${F(r.amt)}</td><td class="tx mut">${esc(r.why)}</td></tr>`).join('')
+      :'<tr><td colspan="5" class="mut">None</td></tr>'}
+    <tr class="tot"><td>Total excluded</td><td></td><td></td><td>${F(exT)}</td><td></td></tr></tbody></table></div></section>`;
+}
+
+/* ---------- shell ---------- */
+function paint(){
+  if(!DATA) return;
+  const e=DATA.ents[ENT], mm=M();
+  document.getElementById('mName').textContent=e.name;
+  document.getElementById('mBasis').textContent='Multiples: '+DATA.mult.BASIS;
+  document.getElementById('mLede').innerHTML=goal()
+    ?`Billings for each person and department against fully loaded employment cost. Break-even is cost × ${mm.be.toFixed(2)}; the profit target is cost × ${mm.tg.toFixed(2)}.`
+    :`Billings against fully loaded employment cost. No profit goal is set for ${esc(e.short)}, so break-even at cost × ${mm.be.toFixed(2)} is the only marker.`;
+  document.getElementById('asat').textContent='Live at '+DATA.generated+(DATA.cached?' (cached)':'');
+  // period buttons
+  const seg=document.getElementById('seg');
+  const opts=[{p:'CUR',t:DATA.months.find(m=>m.key===DATA.current.key).short+' to date'}]
+    .concat(DATA.months.filter(m=>m.key!==DATA.current.key).slice().reverse().map(m=>({p:m.key,t:m.short})))
+    .concat([{p:'QTD',t:'Quarter to date'},{p:'YTD',t:DATA.fy+' YTD'}]);
+  seg.innerHTML=opts.map(o=>`<button class="${o.p===PER?'on':''}" data-p="${o.p}">${o.t}</button>`).join('');
+  // tabs
+  const ds=deptsOf(ENT).filter(d=>{const a=deptAgg(d.name);return a.c||a.b;});
+  const tabs=[{id:'sum',t:'Summary',s:F(entAgg().b)+' billed'}]
+    .concat(ds.map(d=>{const a=deptAgg(d.name);return {id:d.name,t:d.label,s:d.fee?F(a.b)+' · '+X(a.mult):F(a.c)+' cost'}}))
+    .concat(Object.keys(DATA.ents).length>1?[{id:'chk',t:'Data checks',s:(DATA.warnings||[]).length+' items'}]:[]);
+  if(!tabs.some(x=>x.id===TAB)) TAB='sum';
+  document.getElementById('tabs').innerHTML=tabs.map(p=>`<button class="tab${p.id===TAB?' on':''}" role="tab" data-p="${esc(p.id)}">${esc(p.t)}<span class="sub">${p.s}</span></button>`).join('');
+  TIPS.length=0;
+  document.getElementById('content').innerHTML=TAB==='sum'?summary():TAB==='chk'?checks():deptPage(TAB);
+  bindTips();
+}
+function setEnts(){
+  const sel=document.getElementById('entsel'), ks=Object.keys(DATA.ents);
+  if(!ks.includes(ENT)) ENT=ks[0];
+  sel.innerHTML=ks.map(k=>`<option value="${esc(k)}"${k===ENT?' selected':''}>${esc(DATA.ents[k].name)}</option>`).join('');
+  sel.disabled=ks.length<2;
+}
+const CFG={API:'https://script.google.com/macros/s/AKfycbzCsVX8lzipOX6Hpui-nXtsqjCnO_MmoPi5SS6HG4_McB2Q8juYUeN78XZPX9Rpc3JO/exec',CLIENT_ID:'705103533614-2s1q015k6lnknrd14dt0rlqksp8d0bnn.apps.googleusercontent.com'};
+let TOKEN=null, TOKEN_EXP=0, ME=null;
+function jwtBody(t){try{let p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');p+='==='.slice((p.length+3)%4);
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(p),c=>c.charCodeAt(0))));}catch(e){return null;}}
+function lock(msg){
+  TOKEN=null; DATA=null; document.body.classList.add('locked');
+  document.getElementById('content').innerHTML=''; document.getElementById('who').hidden=true;
+  document.getElementById('gmsg').textContent=msg||'';
+}
+function showWho(){
+  const w=document.getElementById('who'), pic=document.getElementById('whoPic');
+  document.getElementById('whoName').textContent=ME.name;
+  pic.innerHTML='';
+  if(/^https:\/\/lh3\.googleusercontent\.com\//.test(ME.pic||'')){const i=document.createElement('img');i.src=ME.pic;i.alt='';i.referrerPolicy='no-referrer';pic.appendChild(i);}
+  else{const s=document.createElement('span');s.className='ini';s.textContent=(ME.name||'?').trim().charAt(0).toUpperCase();pic.appendChild(s);}
+  w.hidden=false;
+}
+function onCred(resp){
+  const t=resp&&resp.credential, p=t&&jwtBody(t);
+  if(!p){lock('Sign-in did not complete. Try again.');return;}
+  TOKEN=t; TOKEN_EXP=(p.exp||0)*1000; ME={name:p.given_name||p.name||p.email,email:p.email,pic:p.picture};
+  document.getElementById('gmsg').textContent='Checking access…';
+  load(false);
+}
+function api(body){
+  return fetch(CFG.API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({idToken:TOKEN},body)),
+    credentials:'omit',cache:'no-store',redirect:'follow',referrerPolicy:'no-referrer'})
+    .then(r=>r.ok?r.json():{ok:false,error:'unavailable'}).catch(()=>({ok:false,error:'unavailable'}));
+}
+function load(force){
+  if(!TOKEN||Date.now()>TOKEN_EXP-60000){ lock(TOKEN?'Your sign-in has expired. Sign in again.':''); try{google.accounts.id.prompt();}catch(e){} return; }
+  const btn=document.getElementById('refresh'); btn.disabled=true; btn.textContent='Refreshing…';
+  const done=d=>{DATA=d; setEnts(); btn.disabled=false; btn.textContent='Refresh data'; paint();};
+  const fail=err=>{btn.disabled=false; btn.textContent='Refresh data';
+    document.getElementById('content').innerHTML=`<div class="err">${esc(err&&err.message||'The dashboard could not load.')}</div>`+(DATA?'':'');
+    if(DATA) paint();};
+  api({action:'data',force:!!force}).then(r=>{
+    if(r.ok){ document.body.classList.remove('locked'); document.getElementById('gmsg').textContent=''; showWho(); done(r.data); return; }
+    btn.disabled=false; btn.textContent='Refresh data';
+    if(r.error==='denied'){ const em=ME&&ME.email; lock((em?em+' is':'This account is')+' not on the list for this dashboard. Contact The Co if you need access.'); try{google.accounts.id.disableAutoSelect();}catch(e){} return; }
+    if(!DATA){ lock(r.error==='busy'?'The dashboard is busy. Try again in a minute.':'The dashboard is unavailable right now. Try again shortly.'); return; }
+    fail({message:r.error==='busy'?'Too many refreshes. Showing the last load; try again in a minute.':'Could not refresh. Showing the last load.'});
+  });
+}
+document.getElementById('signout').addEventListener('click',()=>{ try{google.accounts.id.disableAutoSelect();}catch(e){} lock('Signed out.'); });
+function startSignIn(n){
+  if(!(window.google&&google.accounts&&google.accounts.id)){ if(n>100){document.getElementById('gmsg').textContent='Google sign-in could not load. Check your connection and reload.';return;} setTimeout(()=>startSignIn(n+1),100); return; }
+  google.accounts.id.initialize({client_id:CFG.CLIENT_ID,callback:onCred,auto_select:true,cancel_on_tap_outside:false,itp_support:true,use_fedcm_for_prompt:true,context:'signin'});
+  google.accounts.id.renderButton(document.getElementById('gbtn'),{theme:'filled_black',size:'large',shape:'pill',text:'signin_with',logo_alignment:'left'});
+  google.accounts.id.prompt();
+}
+document.getElementById('tabs').addEventListener('click',ev=>{const b=ev.target.closest('.tab');if(!b)return;TAB=b.dataset.p;paint();window.scrollTo({top:0});});
+document.getElementById('seg').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;PER=b.dataset.p;paint();});
+document.getElementById('entsel').addEventListener('change',ev=>{ENT=ev.target.value;TAB='sum';paint();window.scrollTo({top:0});});
+document.getElementById('refresh').addEventListener('click',()=>load(true));
+{const xo=document.getElementById('xon'); xo.checked=XON;
+ xo.addEventListener('change',()=>{XON=xo.checked; try{localStorage.setItem('woodsXero',XON?'on':'off');}catch(e){} if(DATA) paint();});}
+document.body.classList.add('locked');
+startSignIn(0);
+})();
+</script>
+</body>
+</html>
